@@ -18,19 +18,44 @@ export class Environment {
   }
 
   /**
-   * Returns exact ground elevation at given (x, z) coordinates
-   * Ensures player feet rest directly on the floor surfaces (never submerged).
+   * Returns exact ground elevation at given (x, z) coordinates.
+   * Multi-level elevation logic:
+   *  - Staircase & Landing: climbs continuously from 0.10m to 3.10m
+   *  - Rooftop Deck: 3.10m when elevated (y >= 2.0m)
+   *  - Room Interior & Front Porch: 0.10m (shoes directly on floor surface)
+   *  - Exterior Yard: 0.0m
    */
-  public getGroundHeight(x: number, z: number): number {
-    // Inside House Interior Floor: x in [-5.0, 5.0], z in [0.8, 9.0]
-    if (x >= -5.0 && x <= 5.0 && z >= 0.8 && z <= 9.0) {
-      return 0.10;
+  public getGroundHeight(x: number, z: number, currentY?: number): number {
+    // 1. Staircase & Top Landing along West Wall:
+    // x in [-6.4, -4.8], z in [0.8, 8.5]
+    if (x >= -6.4 && x <= -4.8 && z >= 0.8 && z <= 8.5) {
+      if (z >= 7.0) {
+        return 3.10; // Top Landing platform leading into roof
+      }
+      if (z <= 1.0) {
+        return 0.10; // Stair bottom approach from yard/porch
+      }
+      // Linear slope along the 16 steps from y = 0.10 (z = 1.0) to y = 3.10 (z = 7.0)
+      const t = (z - 1.0) / 6.0;
+      return 0.10 + t * 3.00;
     }
-    // Front Entrance Walkway / Porch: x in [-1.8, 1.8], z in [-3.5, 0.8]
+
+    // 2. House Footprint (Room Interior vs Rooftop Deck):
+    // x in [-5.2, 5.2], z in [0.8, 9.2]
+    if (x >= -5.2 && x <= 5.2 && z >= 0.8 && z <= 9.2) {
+      // If player is elevated (on the roof or climbing above 2.0m)
+      if (currentY !== undefined && currentY >= 2.0) {
+        return 3.10; // Rooftop deck elevation
+      }
+      return 0.10; // Ground floor interior room elevation
+    }
+
+    // 3. Front Entrance Walkway / Porch:
     if (x >= -1.8 && x <= 1.8 && z >= -3.5 && z < 0.8) {
       return 0.10;
     }
-    // Exterior Ground
+
+    // 4. Exterior Yard Ground
     return 0.0;
   }
 
@@ -79,7 +104,7 @@ export class Environment {
     northWall.castShadow = true;
     northWall.receiveShadow = true;
     this.scene.add(northWall);
-    this.colliders.push({ minX: -5.2, maxX: 5.2, minZ: 8.8, maxZ: 9.2 });
+    this.colliders.push({ minX: -5.2, maxX: 5.2, minZ: 8.8, maxZ: 9.2, maxY: 2.8 });
 
     // B. West Wall: 8m long at x = -5.0
     const westWall = new THREE.Mesh(new THREE.BoxGeometry(0.4, h, 8.0), wallMat);
@@ -87,7 +112,7 @@ export class Environment {
     westWall.castShadow = true;
     westWall.receiveShadow = true;
     this.scene.add(westWall);
-    this.colliders.push({ minX: -5.2, maxX: -4.8, minZ: 0.8, maxZ: 9.2 });
+    this.colliders.push({ minX: -5.2, maxX: -4.8, minZ: 0.8, maxZ: 9.2, maxY: 2.8 });
 
     // C. East Wall (With Smashed Window opening at z = 4.0 to 6.0)
     // East Wall North Segment (z: 6.0 to 9.0, length 3.0m)
@@ -96,7 +121,7 @@ export class Environment {
     eastWallN.castShadow = true;
     eastWallN.receiveShadow = true;
     this.scene.add(eastWallN);
-    this.colliders.push({ minX: 4.8, maxX: 5.2, minZ: 6.0, maxZ: 9.2 });
+    this.colliders.push({ minX: 4.8, maxX: 5.2, minZ: 6.0, maxZ: 9.2, maxY: 2.8 });
 
     // East Wall South Segment (z: 1.0 to 4.0, length 3.0m)
     const eastWallS = new THREE.Mesh(new THREE.BoxGeometry(0.4, h, 3.0), wallMat);
@@ -104,7 +129,7 @@ export class Environment {
     eastWallS.castShadow = true;
     eastWallS.receiveShadow = true;
     this.scene.add(eastWallS);
-    this.colliders.push({ minX: 4.8, maxX: 5.2, minZ: 0.8, maxZ: 4.0 });
+    this.colliders.push({ minX: 4.8, maxX: 5.2, minZ: 0.8, maxZ: 4.0, maxY: 2.8 });
 
     // SMASHED WINDOW (Opening between z = 4.0 and z = 6.0)
     // Lower Sill Wall (height: 0.9m)
@@ -143,7 +168,7 @@ export class Environment {
     });
 
     // Window collider (blocks walking through the wall/window)
-    this.colliders.push({ minX: 4.8, maxX: 5.2, minZ: 4.0, maxZ: 6.0 });
+    this.colliders.push({ minX: 4.8, maxX: 5.2, minZ: 4.0, maxZ: 6.0, maxY: 2.8 });
 
     // D. South Wall (Front, with Open Doorway at center x: -1.0 to 1.0)
     // Front walls use dynamic cutaway material so they fade when viewing inside
@@ -160,7 +185,7 @@ export class Environment {
     southWallL.castShadow = true;
     southWallL.receiveShadow = true;
     this.scene.add(southWallL);
-    this.colliders.push({ minX: -5.2, maxX: -1.0, minZ: 0.8, maxZ: 1.2 });
+    this.colliders.push({ minX: -5.2, maxX: -1.0, minZ: 0.8, maxZ: 1.2, maxY: 2.8 });
 
     // South Wall Right Segment (x: 1.0 to 5.0, length 4.0m)
     const southWallR = new THREE.Mesh(new THREE.BoxGeometry(4.0, h, 0.4), this.southWallMat);
@@ -168,7 +193,7 @@ export class Environment {
     southWallR.castShadow = true;
     southWallR.receiveShadow = true;
     this.scene.add(southWallR);
-    this.colliders.push({ minX: 1.0, maxX: 5.2, minZ: 0.8, maxZ: 1.2 });
+    this.colliders.push({ minX: 1.0, maxX: 5.2, minZ: 0.8, maxZ: 1.2, maxY: 2.8 });
 
     // Doorway Header (above door opening from y = 2.4 to 3.0)
     const doorHeader = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.6, 0.4), this.southWallMat);
@@ -242,7 +267,7 @@ export class Environment {
     });
 
     // Table Collider
-    this.colliders.push({ minX: -3.1, maxX: -0.5, minZ: 4.4, maxZ: 6.0 });
+    this.colliders.push({ minX: -3.1, maxX: -0.5, minZ: 4.4, maxZ: 6.0, maxY: 2.0 });
 
     // 5. Overturned Chair near Table
     const chair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.1, 0.55), trimMat);
@@ -304,7 +329,7 @@ export class Environment {
     cabinet.position.set(2.5, 0.9, 8.5);
     cabinet.castShadow = true;
     this.scene.add(cabinet);
-    this.colliders.push({ minX: 1.3, maxX: 3.7, minZ: 8.0, maxZ: 9.0 });
+    this.colliders.push({ minX: 1.3, maxX: 3.7, minZ: 8.0, maxZ: 9.0, maxY: 2.5 });
 
     // Clue Prop: Final Eviction Notice & Debt Ledger (clue_late_rent_ledger)
     const ledgerGroup = new THREE.Group();
@@ -351,6 +376,341 @@ export class Environment {
 
     // Multi-Layered Iridescent Hydrocarbon Decal beneath burn mark
     CrimeSceneDecorators.createDecal(this.scene, 'burn_accelerant', new THREE.Vector3(0.0, 0.05, 4.8));
+
+    // 9. Exterior Walk-up Staircase to Rooftop Deck
+    this.buildStaircase();
+
+    // 10. Rooftop Deck, Parapet Walls, Interior Ceiling & Diorama Props
+    this.buildRoof();
+  }
+
+  /**
+   * Builds the exterior walk-up staircase along the West exterior wall:
+   * 16 steps, stringers, safety handrails, balusters, and top landing platform connecting to roof deck.
+   */
+  private buildStaircase() {
+    const stepMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.75, metalness: 0.15 });
+    const stringerMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.6, metalness: 0.3 });
+    const railMat = new THREE.MeshStandardMaterial({ color: 0x1E293B, roughness: 0.4, metalness: 0.8 });
+
+    const numSteps = 16;
+    const startZ = 1.0;
+    const endZ = 7.0;
+    const runTotal = endZ - startZ; // 6.0m
+    const startY = 0.10;
+    const endY = 3.10;
+    const riseTotal = endY - startY; // 3.0m
+
+    const stepDepth = runTotal / numSteps; // 0.375m
+    const stepRise = riseTotal / numSteps; // 0.1875m
+
+    // 1. Treads / Steps
+    for (let i = 0; i < numSteps; i++) {
+      const stepZ = startZ + (i + 0.5) * stepDepth;
+      const stepY = startY + (i + 0.5) * stepRise;
+      const stepMesh = new THREE.Mesh(new THREE.BoxGeometry(1.2, stepRise, stepDepth + 0.04), stepMat);
+      stepMesh.position.set(-5.6, stepY, stepZ);
+      stepMesh.castShadow = true;
+      stepMesh.receiveShadow = true;
+      this.scene.add(stepMesh);
+    }
+
+    // 2. Diagonal Stringers (Support Beams)
+    const stairAngle = Math.atan2(riseTotal, runTotal); // ~0.4636 rad (~26.56°)
+    const stairLen = Math.sqrt(runTotal * runTotal + riseTotal * riseTotal); // ~6.708m
+    const midY = startY + riseTotal / 2; // 1.60m
+    const midZ = startZ + runTotal / 2; // 4.0m
+
+    // Outer stringer at x = -6.2
+    const outerStringer = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.28, stairLen), stringerMat);
+    outerStringer.position.set(-6.2, midY, midZ);
+    outerStringer.rotation.x = -stairAngle;
+    outerStringer.castShadow = true;
+    this.scene.add(outerStringer);
+
+    // Inner stringer against wall at x = -5.02
+    const innerStringer = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.28, stairLen), stringerMat);
+    innerStringer.position.set(-5.02, midY, midZ);
+    innerStringer.rotation.x = -stairAngle;
+    innerStringer.castShadow = true;
+    this.scene.add(innerStringer);
+
+    // 3. Handrail & Balusters along Outer Edge (x = -6.22)
+    const handrailHeight = 0.85;
+    const handrail = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.08, stairLen), railMat);
+    handrail.position.set(-6.22, midY + handrailHeight, midZ);
+    handrail.rotation.x = -stairAngle;
+    handrail.castShadow = true;
+    this.scene.add(handrail);
+
+    // Vertical Baluster Posts every 4 steps
+    for (let k = 0; k <= numSteps; k += 4) {
+      const bZ = startZ + k * stepDepth;
+      const bBaseY = startY + k * stepRise;
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.06, handrailHeight, 0.06), railMat);
+      post.position.set(-6.22, bBaseY + handrailHeight / 2, bZ);
+      post.castShadow = true;
+      this.scene.add(post);
+    }
+
+    // 4. Top Landing Platform (x in [-6.2, -5.0], z in [7.0, 8.4], top at y = 3.10)
+    const landing = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.12, 1.4), stepMat);
+    landing.position.set(-5.6, 3.04, 7.7);
+    landing.castShadow = true;
+    landing.receiveShadow = true;
+    this.scene.add(landing);
+
+    // Structural steel support pillars under landing
+    [[-6.15, 7.05], [-6.15, 8.35]].forEach(([colX, colZ]) => {
+      const col = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 3.0, 8), railMat);
+      col.position.set(colX, 1.5, colZ);
+      col.castShadow = true;
+      this.scene.add(col);
+    });
+
+    // Landing safety guardrails
+    // West outer guardrail
+    const landWestRail = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.08, 1.4), railMat);
+    landWestRail.position.set(-6.22, 3.10 + handrailHeight, 7.7);
+    landWestRail.castShadow = true;
+    this.scene.add(landWestRail);
+
+    // North guardrail
+    const landNorthRail = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.08, 0.06), railMat);
+    landNorthRail.position.set(-5.6, 3.10 + handrailHeight, 8.4);
+    landNorthRail.castShadow = true;
+    this.scene.add(landNorthRail);
+
+    // Corner balusters on landing
+    const landPost1 = new THREE.Mesh(new THREE.BoxGeometry(0.06, handrailHeight, 0.06), railMat);
+    landPost1.position.set(-6.22, 3.10 + handrailHeight / 2, 7.0);
+    this.scene.add(landPost1);
+
+    const landPost2 = new THREE.Mesh(new THREE.BoxGeometry(0.06, handrailHeight, 0.06), railMat);
+    landPost2.position.set(-6.22, 3.10 + handrailHeight / 2, 8.4);
+    this.scene.add(landPost2);
+
+    // Boundary Colliders for stairs & landing
+    this.colliders.push({ minX: -6.5, maxX: -6.15, minZ: 0.8, maxZ: 8.5 });
+    this.colliders.push({ minX: -6.5, maxX: -5.0, minZ: 8.35, maxZ: 8.7, minY: 2.0 });
+  }
+
+  /**
+   * Builds the Roof Deck, Parapet Safety Walls, Interior Ceiling with Beams & Pendant Lamp,
+   * Red Brick Chimney, Industrial HVAC Compressor, and Attic Skylight.
+   */
+  private buildRoof() {
+    const roofDeckMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.85, metalness: 0.1 });
+    const ceilingMat = new THREE.MeshStandardMaterial({ color: 0xF1F5F9, roughness: 0.8 });
+    const beamMat = new THREE.MeshStandardMaterial({ color: 0x451A03, roughness: 0.75 });
+    const parapetMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.7 });
+    const parapetCapMat = new THREE.MeshStandardMaterial({ color: 0x1E293B, roughness: 0.5 });
+    const brickMat = new THREE.MeshStandardMaterial({ color: 0x991B1B, roughness: 0.85 });
+    const capstoneMat = new THREE.MeshStandardMaterial({ color: 0xCBD5E1, roughness: 0.6 });
+    const flueMat = new THREE.MeshStandardMaterial({ color: 0xEA580C, roughness: 0.65 });
+    const hvacMat = new THREE.MeshStandardMaterial({ color: 0x64748B, roughness: 0.4, metalness: 0.6 });
+    const frameMat = new THREE.MeshStandardMaterial({ color: 0x1E293B, roughness: 0.5 });
+    const skylightGlassMat = new THREE.MeshStandardMaterial({
+      color: 0x38BDF8,
+      roughness: 0.15,
+      transparent: true,
+      opacity: 0.45
+    });
+
+    // 1. Roof Deck Slabs (Walking surface at y = 3.10m, thickness 0.12m, center at y = 3.04m)
+    // A. Main Slab: covers x in [-3.8, 5.0], z in [1.0, 9.0]
+    const slabMain = new THREE.Mesh(new THREE.BoxGeometry(8.8, 0.12, 8.0), roofDeckMat);
+    slabMain.position.set(0.6, 3.04, 5.0);
+    slabMain.receiveShadow = true;
+    slabMain.castShadow = true;
+    this.scene.add(slabMain);
+
+    // B. West South Slab: covers x in [-5.0, -3.8], z in [1.0, 6.8]
+    const slabWestS = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.12, 5.8), roofDeckMat);
+    slabWestS.position.set(-4.4, 3.04, 3.9);
+    slabWestS.receiveShadow = true;
+    slabWestS.castShadow = true;
+    this.scene.add(slabWestS);
+
+    // C. West North Slab: covers x in [-5.0, -3.8], z in [8.4, 9.0]
+    const slabWestN = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.12, 0.6), roofDeckMat);
+    slabWestN.position.set(-4.4, 3.04, 8.7);
+    slabWestN.receiveShadow = true;
+    slabWestN.castShadow = true;
+    this.scene.add(slabWestN);
+    // (Note: x in [-5.0, -3.8], z in [6.8, 8.4] is open for walk-in from stair landing!)
+
+    // 2. Interior Ceiling & Wooden Timber Beams (Visible from inside room in FPP)
+    const ceiling = new THREE.Mesh(new THREE.BoxGeometry(9.6, 0.02, 7.6), ceilingMat);
+    ceiling.position.set(0, 2.97, 5.0);
+    this.scene.add(ceiling);
+
+    [2.4, 4.4, 6.4, 8.2].forEach(beamZ => {
+      const beam = new THREE.Mesh(new THREE.BoxGeometry(9.6, 0.16, 0.22), beamMat);
+      beam.position.set(0, 2.89, beamZ);
+      beam.castShadow = true;
+      this.scene.add(beam);
+    });
+
+    // Hanging Pendant Inspection Lamp over Evidence Table (x: -1.8, z: 5.2)
+    const lampGroup = new THREE.Group();
+    lampGroup.position.set(-1.8, 0, 5.2);
+
+    const canopy = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.04, 12), frameMat);
+    canopy.position.y = 2.96;
+    lampGroup.add(canopy);
+
+    const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.72, 8), frameMat);
+    cord.position.y = 2.58;
+    lampGroup.add(cord);
+
+    const shade = new THREE.Mesh(new THREE.ConeGeometry(0.32, 0.20, 16, 1, true), frameMat);
+    shade.position.y = 2.22;
+    lampGroup.add(shade);
+
+    const bulbMat = new THREE.MeshStandardMaterial({
+      color: 0xFEF08A,
+      emissive: 0xFDE047,
+      emissiveIntensity: 1.5,
+      roughness: 0.2
+    });
+    const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 12), bulbMat);
+    bulb.position.y = 2.15;
+    lampGroup.add(bulb);
+
+    const lampLight = new THREE.PointLight(0xFFFBEB, 1.3, 9, 2.0);
+    lampLight.position.y = 2.10;
+    lampGroup.add(lampLight);
+
+    this.scene.add(lampGroup);
+
+    // 3. Parapet Safety Walls on Roof (Height 0.45m, center y = 3.325)
+    // North Parapet
+    const pNorth = new THREE.Mesh(new THREE.BoxGeometry(10.0, 0.45, 0.25), parapetMat);
+    pNorth.position.set(0, 3.325, 9.0);
+    pNorth.castShadow = true;
+    this.scene.add(pNorth);
+    const pNorthCap = new THREE.Mesh(new THREE.BoxGeometry(10.05, 0.06, 0.32), parapetCapMat);
+    pNorthCap.position.set(0, 3.58, 9.0);
+    this.scene.add(pNorthCap);
+    this.colliders.push({ minX: -5.2, maxX: 5.2, minZ: 8.85, maxZ: 9.3, minY: 2.8 });
+
+    // East Parapet
+    const pEast = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.45, 8.0), parapetMat);
+    pEast.position.set(5.0, 3.325, 5.0);
+    pEast.castShadow = true;
+    this.scene.add(pEast);
+    const pEastCap = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.06, 8.05), parapetCapMat);
+    pEastCap.position.set(5.0, 3.58, 5.0);
+    this.scene.add(pEastCap);
+    this.colliders.push({ minX: 4.85, maxX: 5.3, minZ: 0.8, maxZ: 9.2, minY: 2.8 });
+
+    // South Parapet
+    const pSouth = new THREE.Mesh(new THREE.BoxGeometry(10.0, 0.45, 0.25), parapetMat);
+    pSouth.position.set(0, 3.325, 1.0);
+    pSouth.castShadow = true;
+    this.scene.add(pSouth);
+    const pSouthCap = new THREE.Mesh(new THREE.BoxGeometry(10.05, 0.06, 0.32), parapetCapMat);
+    pSouthCap.position.set(0, 3.58, 1.0);
+    this.scene.add(pSouthCap);
+    this.colliders.push({ minX: -5.2, maxX: 5.2, minZ: 0.7, maxZ: 1.15, minY: 2.8 });
+
+    // West Parapet South Section (z: 1.0 to 6.8, length 5.8m)
+    const pWestS = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.45, 5.8), parapetMat);
+    pWestS.position.set(-5.0, 3.325, 3.9);
+    pWestS.castShadow = true;
+    this.scene.add(pWestS);
+    const pWestSCap = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.06, 5.85), parapetCapMat);
+    pWestSCap.position.set(-5.0, 3.58, 3.9);
+    this.scene.add(pWestSCap);
+    this.colliders.push({ minX: -5.3, maxX: -4.85, minZ: 0.8, maxZ: 6.8, minY: 2.8 });
+
+    // West Parapet North Section (z: 8.4 to 9.0, length 0.6m)
+    const pWestN = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.45, 0.6), parapetMat);
+    pWestN.position.set(-5.0, 3.325, 8.7);
+    pWestN.castShadow = true;
+    this.scene.add(pWestN);
+    const pWestNCap = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.06, 0.65), parapetCapMat);
+    pWestNCap.position.set(-5.0, 3.58, 8.7);
+    this.scene.add(pWestNCap);
+    this.colliders.push({ minX: -5.3, maxX: -4.85, minZ: 8.4, maxZ: 9.2, minY: 2.8 });
+
+    // 4. Rooftop Diorama Props
+    // A. Red Brick Chimney (x: 2.8, z: 7.5)
+    const chimneyGroup = new THREE.Group();
+    chimneyGroup.position.set(2.8, 3.10, 7.5);
+
+    const chimneyShaft = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.3, 0.9), brickMat);
+    chimneyShaft.position.y = 0.65;
+    chimneyShaft.castShadow = true;
+    chimneyGroup.add(chimneyShaft);
+
+    const chimneyCap = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.10, 1.05), capstoneMat);
+    chimneyCap.position.y = 1.35;
+    chimneyCap.castShadow = true;
+    chimneyGroup.add(chimneyCap);
+
+    [-0.2, 0.2].forEach(fx => {
+      const flue = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 0.36, 12), flueMat);
+      flue.position.set(fx, 1.58, 0);
+      flue.castShadow = true;
+      chimneyGroup.add(flue);
+    });
+    this.scene.add(chimneyGroup);
+    this.colliders.push({ minX: 2.2, maxX: 3.4, minZ: 6.9, maxZ: 8.1, minY: 2.8 });
+
+    // B. Industrial HVAC Compressor Unit (x: -1.2, z: 3.2)
+    const hvacGroup = new THREE.Group();
+    hvacGroup.position.set(-1.2, 3.10, 3.2);
+
+    const hvacBody = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.85, 1.0), hvacMat);
+    hvacBody.position.y = 0.425;
+    hvacBody.castShadow = true;
+    hvacGroup.add(hvacBody);
+
+    const fanRecess = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.04, 16), parapetCapMat);
+    fanRecess.position.y = 0.85;
+    hvacGroup.add(fanRecess);
+
+    const fanBlades = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.02, 0.10), parapetCapMat);
+    fanBlades.position.y = 0.86;
+    hvacGroup.add(fanBlades);
+
+    const fanBlades2 = fanBlades.clone();
+    fanBlades2.rotation.y = Math.PI / 2;
+    hvacGroup.add(fanBlades2);
+
+    const pipeMat = new THREE.MeshStandardMaterial({ color: 0xB45309, roughness: 0.5, metalness: 0.7 });
+    const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.8, 8), pipeMat);
+    pipe.rotation.z = Math.PI / 2;
+    pipe.position.set(-0.8, 0.25, 0);
+    hvacGroup.add(pipe);
+
+    this.scene.add(hvacGroup);
+    this.colliders.push({ minX: -2.0, maxX: -0.4, minZ: 2.6, maxZ: 3.8, minY: 2.8 });
+
+    // C. Attic Skylight Hatch (x: 1.2, z: 4.0)
+    const skylightGroup = new THREE.Group();
+    skylightGroup.position.set(1.2, 3.10, 4.0);
+
+    const curb = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.16, 1.4), frameMat);
+    curb.position.y = 0.08;
+    curb.castShadow = true;
+    skylightGroup.add(curb);
+
+    const paneGeo = new THREE.BoxGeometry(0.85, 0.03, 1.35);
+    const paneWest = new THREE.Mesh(paneGeo, skylightGlassMat);
+    paneWest.position.set(-0.38, 0.26, 0);
+    paneWest.rotation.z = 0.32;
+    skylightGroup.add(paneWest);
+
+    const paneEast = new THREE.Mesh(paneGeo, skylightGlassMat);
+    paneEast.position.set(0.38, 0.26, 0);
+    paneEast.rotation.z = -0.32;
+    skylightGroup.add(paneEast);
+
+    this.scene.add(skylightGroup);
+    this.colliders.push({ minX: 0.3, maxX: 2.1, minZ: 3.2, maxZ: 4.8, minY: 2.8 });
   }
 
   public getInteractiveObjects(): THREE.Object3D[] {

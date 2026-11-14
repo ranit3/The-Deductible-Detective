@@ -170,7 +170,7 @@ export class SceneManager {
     this.lastTime = now;
 
     // 1. Update Player Locomotion, Jumping & Elevation
-    const groundHeightFn = (x: number, z: number) => this.environment.getGroundHeight(x, z);
+    const groundHeightFn = (x: number, z: number, currentY?: number) => this.environment.getGroundHeight(x, z, currentY);
     this.player.update(delta, this.camera, this.environment.colliders, true, groundHeightFn);
 
     // 2. Dynamic Adaptive Camera (Interior Diorama vs Exterior Porch)
@@ -231,23 +231,23 @@ export class SceneManager {
 
   /**
    * Dynamically transitions camera between:
-   *  - First-Person Perspective (FPP) when inside casualty room (eye-level inspection view)
-   *  - Third-Person Perspective (TPP) when outside on porch/street (2.5D angled diorama view)
+   *  - First-Person Perspective (FPP) when inside ground floor casualty room (eye-level inspection view, y < 2.0m)
+   *  - Third-Person Perspective (TPP) when outside on porch/street or elevated on the rooftop deck / stairs (2.5D angled diorama view)
    */
   private updateDynamicCamera(delta: number) {
-    const isInside = this.player.position.z > 0.8 && Math.abs(this.player.position.x) < 5.0;
+    const isInsideRoom = this.player.position.z > 0.8 && Math.abs(this.player.position.x) < 5.0 && this.player.position.y < 2.0;
 
     // Check FPP/TPP Mode Transition
-    if (isInside && !this.isFPP) {
-      // Transition from Exterior (TPP) to Interior (FPP)
+    if (isInsideRoom && !this.isFPP) {
+      // Transition from Exterior/Rooftop (TPP) to Interior Room (FPP)
       this.isFPP = true;
       this.player.setFirstPerson(true);
       this.orbitControls.enabled = false;
       this.fppYaw = Math.PI; // Face forward (+Z) into the room
       this.fppPitch = -0.05;
       if (this.onModeChange) this.onModeChange(true);
-    } else if (!isInside && this.isFPP) {
-      // Transition from Interior (FPP) to Exterior (TPP)
+    } else if (!isInsideRoom && this.isFPP) {
+      // Transition from Interior Room (FPP) to Exterior/Rooftop (TPP)
       this.isFPP = false;
       this.player.setFirstPerson(false);
       this.orbitControls.enabled = true;

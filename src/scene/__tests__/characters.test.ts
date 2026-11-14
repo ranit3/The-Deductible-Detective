@@ -226,4 +226,83 @@ if (!(player as any).proceduralRoot.visible) {
 }
 console.log('✓ Character model restored in TPP (detective visible on exterior porch/street)');
 
+// 8. Test Staircase Climbing & Rooftop Deck Multi-Level Elevation Physics
+console.log('Testing Staircase Climbing & Rooftop Deck Physics...');
+import { Environment } from '../Environment';
+const env = new Environment(scene);
+
+// Check Staircase elevation slope
+const stairBaseH = env.getGroundHeight(-5.6, 1.0, 0.10);
+const stairMidH = env.getGroundHeight(-5.6, 4.0, 1.60);
+const stairTopH = env.getGroundHeight(-5.6, 7.0, 3.10);
+const landingH = env.getGroundHeight(-5.6, 7.5, 3.10);
+
+if (Math.abs(stairBaseH - 0.10) > 0.01) {
+  throw new Error(`Staircase base height expected 0.10m, got ${stairBaseH}`);
+}
+if (Math.abs(stairMidH - 1.60) > 0.01) {
+  throw new Error(`Staircase midway height expected 1.60m, got ${stairMidH}`);
+}
+if (Math.abs(stairTopH - 3.10) > 0.01) {
+  throw new Error(`Staircase top height expected 3.10m, got ${stairTopH}`);
+}
+if (Math.abs(landingH - 3.10) > 0.01) {
+  throw new Error(`Staircase landing height expected 3.10m, got ${landingH}`);
+}
+console.log(`✓ Staircase slope verified: Base = ${stairBaseH.toFixed(2)}m -> Mid = ${stairMidH.toFixed(2)}m -> Top = ${stairTopH.toFixed(2)}m -> Landing = ${landingH.toFixed(2)}m`);
+
+// Check Multi-level distinction between Room Interior (0.10m) and Rooftop Deck (3.10m)
+const interiorRoomH = env.getGroundHeight(0, 5.0, 0.10);
+const rooftopH = env.getGroundHeight(0, 5.0, 3.10);
+
+if (interiorRoomH !== 0.10) {
+  throw new Error(`Expected interior room elevation 0.10m, got ${interiorRoomH}`);
+}
+if (rooftopH !== 3.10) {
+  throw new Error(`Expected rooftop deck elevation 3.10m, got ${rooftopH}`);
+}
+console.log(`✓ Multi-level elevation logic verified: Interior Room = ${interiorRoomH.toFixed(2)}m vs Rooftop Deck = ${rooftopH.toFixed(2)}m`);
+
+// Verify Player walking and jumping on Rooftop Deck
+const envGroundSampler = (x: number, z: number, y?: number) => env.getGroundHeight(x, z, y);
+player.setPosition(0, 3.10, 5.0);
+player.update(0.1, camera, env.colliders, true, envGroundSampler);
+
+if (Math.abs(player.position.y - 3.10) > 0.01) {
+  throw new Error(`Player sunk or fell through roof deck! Expected y = 3.10m, got ${player.position.y}`);
+}
+console.log(`✓ Detective resting stably on Rooftop Deck: ${player.position.y.toFixed(2)}m`);
+
+// Rooftop Jump
+player.jump();
+if (player.verticalVelocity <= 0 || player.isGrounded) {
+  throw new Error('Rooftop jump failed to initiate vertical impulse');
+}
+player.update(0.1, camera, env.colliders, true, envGroundSampler);
+if (player.position.y <= 3.10 || player.isGrounded) {
+  throw new Error(`Player should be airborne above roof! y = ${player.position.y}`);
+}
+console.log(`✓ Detective airborne mid-jump over rooftop at y = ${player.position.y.toFixed(2)}m`);
+
+// Land back on roof deck
+for (let s = 0; s < 10; s++) {
+  player.update(0.1, camera, env.colliders, true, envGroundSampler);
+}
+if (!player.isGrounded || Math.abs(player.position.y - 3.10) > 0.01) {
+  throw new Error(`Player failed to land squarely back on roof deck! isGrounded: ${player.isGrounded}, y = ${player.position.y}`);
+}
+console.log(`✓ Detective landed cleanly back on Rooftop Deck surface: ${player.position.y.toFixed(2)}m (isGrounded: ${player.isGrounded})`);
+
+// Verify ground-floor wall colliders do not block rooftop walking
+let hasWallCollidersWithMaxY = false;
+let hasRooftopCollidersWithMinY = false;
+for (const c of env.colliders) {
+  if (c.maxY === 2.8) hasWallCollidersWithMaxY = true;
+  if (c.minY === 2.8) hasRooftopCollidersWithMinY = true;
+}
+if (!hasWallCollidersWithMaxY || !hasRooftopCollidersWithMinY) {
+  throw new Error('Missing vertical filtering on wall or rooftop colliders');
+}
+console.log('✓ Multi-level vertical collider filtering verified (Ground walls use maxY: 2.8, Parapets use minY: 2.8).');
+
 console.log('--- ALL CHARACTER LOCOMOTION & VISUALS TESTS PASSED SUCCESSFULLY! ---');

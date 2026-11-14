@@ -6,6 +6,8 @@ export interface BoundingBox2D {
   maxX: number;
   minZ: number;
   maxZ: number;
+  minY?: number;
+  maxY?: number;
 }
 
 /**
@@ -486,7 +488,7 @@ export class PlayerCharacter {
     camera: THREE.Camera,
     colliders: BoundingBox2D[] = [],
     canMove: boolean = true,
-    getGroundHeight?: (x: number, z: number) => number
+    getGroundHeight?: (x: number, z: number, currentY?: number) => number
   ): THREE.Vector3 {
     const prevPos = this.position.clone();
 
@@ -527,6 +529,10 @@ export class PlayerCharacter {
         // Resolve simple AABB wall collision (slides smoothly along walls)
         const radius = 0.4;
         for (const b of colliders) {
+          // Vertical check: skip colliders above or below player's current elevation
+          if (b.minY !== undefined && this.position.y < b.minY) continue;
+          if (b.maxY !== undefined && this.position.y > b.maxY) continue;
+
           const minX = b.minX - radius;
           const maxX = b.maxX + radius;
           const minZ = b.minZ - radius;
@@ -557,7 +563,7 @@ export class PlayerCharacter {
 
       // 2. Vertical Jump & Ground Height Elevation Physics
       // Samples ground height beneath feet to keep shoes directly on top of floor surfaces
-      const groundY = getGroundHeight ? getGroundHeight(this.position.x, this.position.z) : 0.10;
+      const groundY = getGroundHeight ? getGroundHeight(this.position.x, this.position.z, this.position.y) : 0.10;
 
       this.verticalVelocity += this.gravity * delta;
       let nextY = this.position.y + this.verticalVelocity * delta;
