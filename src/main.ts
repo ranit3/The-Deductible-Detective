@@ -135,6 +135,12 @@ class App {
       }
     };
 
+    // Transition from Dialogue to Report
+    this.ui.dialogueView.onProceedToReport = () => {
+      this.sound.playPageFlip();
+      this.ui.reportView.show();
+    };
+
     // Report Submission Event
     this.ui.reportView.onSubmitReport = (submission) => {
       this.sound.playStampThud();

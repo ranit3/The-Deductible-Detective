@@ -133,6 +133,18 @@ export class ReportFormView {
 
     this.el.querySelector('#btnCloseReport')?.addEventListener('click', () => this.hide());
 
+    const payoutInput = this.el.querySelector('#reportPayout') as HTMLInputElement;
+    this.el.querySelectorAll('input[name="verdictFraud"]').forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        const val = (e.target as HTMLInputElement).value;
+        if (val === 'true') {
+          if (!payoutInput.value || payoutInput.value === String(currentCase.claimedAmount)) {
+            payoutInput.value = '0';
+          }
+        }
+      });
+    });
+
     const form = this.el.querySelector('#claimReportForm') as HTMLFormElement;
     form?.addEventListener('submit', (e) => {
       e.preventDefault();

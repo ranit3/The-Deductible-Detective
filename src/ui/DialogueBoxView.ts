@@ -1,3 +1,4 @@
+import { CaseManager } from '../logic/CaseManager';
 import { DialogueEngine } from '../logic/DialogueEngine';
 import { DialogueNode } from '../logic/types';
 
@@ -7,13 +8,16 @@ import { DialogueNode } from '../logic/types';
  */
 export class DialogueBoxView {
   private el: HTMLElement;
+  private caseManager: CaseManager;
   private dialogueEngine: DialogueEngine;
   public isOpen: boolean = false;
   public onOptionChosen: ((contradictionFound: boolean) => void) | null = null;
+  public onProceedToReport: (() => void) | null = null;
   public onClose: (() => void) | null = null;
 
-  constructor(dialogueEngine: DialogueEngine) {
-    this.dialogueEngine = dialogueEngine;
+  constructor(caseManager: CaseManager) {
+    this.caseManager = caseManager;
+    this.dialogueEngine = caseManager.dialogueEngine;
     this.el = document.createElement('div');
     this.el.id = 'dialogueOverlay';
     this.el.className = 'dialogue-backdrop';
@@ -32,20 +36,31 @@ export class DialogueBoxView {
     if (this.onClose) this.onClose();
   }
 
-  public render() {
+  private getSpeakerAvatar(role: string, name: string): string {
+    const str = (role + ' ' + name).toLowerCase();
+    if (str.includes('baker') || str.includes('croissant') || str.includes('pierre')) return '👨‍🍳';
+    if (str.includes('landlady') || str.includes('vance') || str.includes('eleanor')) return '👵';
+    if (str.includes('logistics') || str.includes('warehouse') || str.includes('brody')) return '👷';
+    return '👤';
+  }
+
+  public render(contradictionBurst: boolean = false) {
     const node = this.dialogueEngine.getCurrentNode();
     if (!node) return;
 
+    const currentCase = this.caseManager.getCurrentCase();
     const options = this.dialogueEngine.getAvailableOptions();
+    const avatar = this.getSpeakerAvatar(currentCase.claimantRole, node.speaker);
+    const isConclusion = options.length === 0;
 
     this.el.innerHTML = `
-      <div class="dialogue-box">
+      <div class="dialogue-box ${contradictionBurst ? 'contradiction-burst' : ''}">
         <div class="dialogue-speaker-bar">
           <div class="speaker-profile">
-            <span class="speaker-avatar">👨‍🍳</span>
+            <span class="speaker-avatar">${avatar}</span>
             <div>
               <div class="speaker-name">${node.speaker}</div>
-              <div class="speaker-role">Insured Claimant</div>
+              <div class="speaker-role">${currentCase.claimantRole}</div>
             </div>
           </div>
           <button class="btn-close-dialogue" id="btnExitDialogue" title="Exit Interview (ESC)">✕ Leave</button>
@@ -55,18 +70,33 @@ export class DialogueBoxView {
           "${node.text}"
         </div>
 
-        <div class="dialogue-options-list">
-          ${options.map((opt, idx) => `
-            <button class="dialogue-opt-btn ${opt.isPressingQuestion ? 'opt-contradiction' : ''}" data-idx="${idx}">
-              <span class="opt-num">${idx + 1}.</span>
-              <span class="opt-text">${opt.text}</span>
+        ${isConclusion ? `
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <p style="font-size:12px; font-weight:800; color:#059669;">
+              ✓ Claimant statement concluded. You have sufficient testimony to draft your assessment report.
+            </p>
+            <button class="btn btn-file-report btn-large" id="btnDialogueToFileReport" style="width:100%; justify-content:center;">
+              📝 DRAFT & FILE ASSESSMENT REPORT (R) ➔
             </button>
-          `).join('')}
-        </div>
+          </div>
+        ` : `
+          <div class="dialogue-options-list">
+            ${options.map((opt, idx) => `
+              <button class="dialogue-opt-btn ${opt.isPressingQuestion ? 'opt-contradiction' : ''}" data-idx="${idx}">
+                <span class="opt-num">${idx + 1}.</span>
+                <span class="opt-text">${opt.text}</span>
+              </button>
+            `).join('')}
+          </div>
+        `}
       </div>
     `;
 
     this.el.querySelector('#btnExitDialogue')?.addEventListener('click', () => this.close());
+    this.el.querySelector('#btnDialogueToFileReport')?.addEventListener('click', () => {
+      this.close();
+      if (this.onProceedToReport) this.onProceedToReport();
+    });
 
     this.el.querySelectorAll('.dialogue-opt-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -77,14 +107,8 @@ export class DialogueBoxView {
           this.onOptionChosen(result.contradictionFound);
         }
 
-        if (!result.nextNode || result.nextNode.options.length === 0) {
-          // If conclusion reached
-          this.render();
-        } else {
-          this.render();
-        }
+        this.render(result.contradictionFound);
       });
     });
   }
 }
-

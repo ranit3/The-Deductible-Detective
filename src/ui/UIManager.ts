@@ -39,7 +39,7 @@ export class UIManager {
     this.briefingView = new CaseBriefingView();
     this.notebookView = new NotebookView(caseManager);
     this.cameraView = new CameraViewfinder();
-    this.dialogueView = new DialogueBoxView(caseManager.dialogueEngine);
+    this.dialogueView = new DialogueBoxView(caseManager);
     this.reportView = new ReportFormView(caseManager);
     this.scoreView = new ScoreModalView();
 

@@ -135,3 +135,15 @@
   color: #64748B;
 }
 
+@keyframes contradictionShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+.dialogue-box.contradiction-burst {
+  animation: contradictionShake 0.4s ease-in-out;
+  border-color: #DC2626;
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.4), 8px 10px 0px var(--ink);
+}
+
