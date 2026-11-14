@@ -6,11 +6,13 @@ import { Environment } from './Environment';
 import { NPCClaimant } from './NPCClaimant';
 import { PlayerCharacter } from './PlayerCharacter';
 import { InteractionRaycaster, RaycastHitInfo } from './InteractionRaycaster';
+import { DecorativePhysics } from './DecorativePhysics';
 
 /**
  * LAYER 2: 3D SCENE MANAGER
  * STEP 3: Fixed / Angled 2.5D Camera & Graybox House Environment
  * STEP 4: Raycasted Hover & Click Interaction System
+ * STEP 8: Decorative Rapier3D Physics Flavor
  */
 export class SceneManager {
   public scene: THREE.Scene;
@@ -23,6 +25,7 @@ export class SceneManager {
   public claimantNPC: NPCClaimant;
   public clueMarkers: ClueMarkers;
   public raycaster: InteractionRaycaster;
+  public physics: DecorativePhysics;
 
   private isRunning: boolean = true;
   private lastTime: number = performance.now();
@@ -82,10 +85,13 @@ export class SceneManager {
       if (this.onClueClicked) this.onClueClicked(clueId, hit);
     };
 
-    // 8. Event Handlers
+    // 8. Decorative Rapier Physics Flavor (Step 8)
+    this.physics = new DecorativePhysics(this.scene);
+
+    // 9. Event Handlers
     window.addEventListener('resize', this.onResize.bind(this));
 
-    // 9. Start Loop
+    // 10. Start Loop
     requestAnimationFrame(this.animate.bind(this));
   }
 
@@ -174,7 +180,10 @@ export class SceneManager {
       this.onNearNPC(isNearNPC, this.claimantNPC.name);
     }
 
-    // 5. Render
+    // 5. Update Decorative Rapier Physics (Step 8)
+    this.physics.update(delta, this.player.position);
+
+    // 6. Render
     this.renderer.render(this.scene, this.camera);
   }
 
