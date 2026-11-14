@@ -9,6 +9,7 @@ import { BoundingBox2D } from './PlayerCharacter';
 export class Environment {
   private scene: THREE.Scene;
   public colliders: BoundingBox2D[] = [];
+  public interactiveProps: THREE.Object3D[] = [];
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
@@ -90,15 +91,20 @@ export class Environment {
     this.scene.add(lintel);
 
     // Broken Glass Shards on Sill & Floor
-    const shard1 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.45, 0.5), glassMat);
+    const glassClueMat = glassMat.clone();
+    const shard1 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.45, 0.5), glassClueMat);
     shard1.position.set(5.0, 1.1, 4.4);
     shard1.rotation.z = 0.15;
+    shard1.userData = { clueId: 'clue_intact_oven_interior', name: 'Undamaged Deck Oven Chamber & Window', interactive: true };
     this.scene.add(shard1);
+    this.interactiveProps.push(shard1);
 
-    const shard2 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.35, 0.4), glassMat);
+    const shard2 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.35, 0.4), glassClueMat);
     shard2.position.set(5.0, 1.05, 5.6);
     shard2.rotation.z = -0.18;
+    shard2.userData = { clueId: 'clue_intact_oven_interior', name: 'Undamaged Deck Oven Chamber & Window', interactive: true };
     this.scene.add(shard2);
+    this.interactiveProps.push(shard2);
 
     // Glass fragments on floor inside
     [-0.3, 0.2, 0.6].forEach((dz, i) => {
@@ -142,12 +148,48 @@ export class Environment {
     doorSlab.castShadow = true;
     this.scene.add(doorSlab);
 
+    // Clue Prop: Forced Lock on Back Door (forced_lock_back_door)
+    const lockMat = new THREE.MeshStandardMaterial({ color: 0xD97706, roughness: 0.35, metalness: 0.8 });
+    const lockMesh = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.22, 0.12), lockMat);
+    lockMesh.position.set(0.82, 1.15, 1.4);
+    lockMesh.castShadow = true;
+    lockMesh.userData = {
+      clueId: 'forced_lock_back_door',
+      name: 'Forced Lock on Back Door',
+      interactive: true
+    };
+    this.scene.add(lockMesh);
+    this.interactiveProps.push(lockMesh);
+
     // 4. Graybox Table (Center-Left of the Room: x: -1.8, z: 5.2)
     const tableTop = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.12, 1.4), trimMat);
     tableTop.position.set(-1.8, 0.85, 5.2);
     tableTop.castShadow = true;
     tableTop.receiveShadow = true;
     this.scene.add(tableTop);
+
+    // Clue Prop: Concealed Kerosene Canister on Table (clue_kerosene_canister)
+    const canisterGroup = new THREE.Group();
+    const canisterMat = new THREE.MeshStandardMaterial({ color: 0xDC2626, roughness: 0.45, metalness: 0.4 });
+    const canisterBody = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 0.38, 16), canisterMat);
+    canisterBody.position.y = 0.19;
+    canisterBody.castShadow = true;
+    canisterGroup.add(canisterBody);
+
+    const spoutMat = new THREE.MeshStandardMaterial({ color: 0xFBBF24, roughness: 0.3 });
+    const canisterSpout = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, 0.12, 8), spoutMat);
+    canisterSpout.position.set(0.05, 0.42, 0);
+    canisterSpout.rotation.z = -0.25;
+    canisterGroup.add(canisterSpout);
+
+    canisterGroup.position.set(-1.8, 0.91, 5.2);
+    canisterGroup.userData = {
+      clueId: 'clue_kerosene_canister',
+      name: 'Concealed Kerosene Canister',
+      interactive: true
+    };
+    this.scene.add(canisterGroup);
+    this.interactiveProps.push(canisterGroup);
 
     // 4 Table Legs
     const legGeo = new THREE.BoxGeometry(0.12, 0.8, 0.12);
@@ -173,11 +215,84 @@ export class Environment {
     chair.castShadow = true;
     this.scene.add(chair);
 
+    // Clue Prop: Accelerant V-Pattern & Puddle Sheen on Floor (clue_burn_pour_pattern)
+    const burnMat = new THREE.MeshStandardMaterial({
+      color: 0x18181B,
+      roughness: 0.95,
+      metalness: 0.15
+    });
+    const burnPuddle = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.95, 0.015, 14), burnMat);
+    burnPuddle.position.set(0.0, 0.06, 4.8);
+    burnPuddle.scale.set(1.3, 1.0, 0.75);
+    burnPuddle.receiveShadow = true;
+    burnPuddle.userData = {
+      clueId: 'clue_burn_pour_pattern',
+      name: 'Accelerant V-Pattern & Puddle Sheen',
+      interactive: true
+    };
+    this.scene.add(burnPuddle);
+    this.interactiveProps.push(burnPuddle);
+
+    // Clue Prop: Unplugged Industrial 240V Cable (clue_unplugged_oven)
+    const cableGroup = new THREE.Group();
+    const plugMat = new THREE.MeshStandardMaterial({ color: 0x1E293B, roughness: 0.7 });
+    const plugBody = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.14, 0.36), plugMat);
+    plugBody.position.set(0, 0.07, 0);
+    cableGroup.add(plugBody);
+
+    const prongMat = new THREE.MeshStandardMaterial({ color: 0xF59E0B, metalness: 0.8, roughness: 0.2 });
+    [-0.06, 0.06].forEach(px => {
+      const prong = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.06, 0.1), prongMat);
+      prong.position.set(px, 0.07, 0.22);
+      cableGroup.add(prong);
+    });
+
+    const cordMat = new THREE.MeshStandardMaterial({ color: 0x0F172A, roughness: 0.8 });
+    const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 1.2, 8), cordMat);
+    cord.rotation.z = Math.PI / 2;
+    cord.rotation.y = 0.3;
+    cord.position.set(-0.6, 0.04, -0.2);
+    cableGroup.add(cord);
+
+    cableGroup.position.set(-3.6, 0.05, 7.2);
+    cableGroup.userData = {
+      clueId: 'clue_unplugged_oven',
+      name: 'Unplugged Industrial 240V Cable',
+      interactive: true
+    };
+    this.scene.add(cableGroup);
+    this.interactiveProps.push(cableGroup);
+
     // 6. Cabinet against North Wall (x: 2.5, z: 8.5)
     const cabinet = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.8, 0.8), trimMat);
     cabinet.position.set(2.5, 0.9, 8.5);
     cabinet.castShadow = true;
     this.scene.add(cabinet);
     this.colliders.push({ minX: 1.3, maxX: 3.7, minZ: 8.0, maxZ: 9.0 });
+
+    // Clue Prop: Final Eviction Notice & Debt Ledger (clue_late_rent_ledger)
+    const ledgerGroup = new THREE.Group();
+    const ledgerCoverMat = new THREE.MeshStandardMaterial({ color: 0xB91C1C, roughness: 0.6 });
+    const ledgerFolder = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.03, 0.48), ledgerCoverMat);
+    ledgerFolder.position.set(0, 0.015, 0);
+    ledgerGroup.add(ledgerFolder);
+
+    const paperMat = new THREE.MeshStandardMaterial({ color: 0xFEF2F2, roughness: 0.7 });
+    const paper = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.02, 0.44), paperMat);
+    paper.position.set(0, 0.03, 0);
+    ledgerGroup.add(paper);
+
+    ledgerGroup.position.set(2.5, 1.82, 8.5);
+    ledgerGroup.userData = {
+      clueId: 'clue_late_rent_ledger',
+      name: 'Final Eviction Notice & Debt Ledger',
+      interactive: true
+    };
+    this.scene.add(ledgerGroup);
+    this.interactiveProps.push(ledgerGroup);
+  }
+
+  public getInteractiveObjects(): THREE.Object3D[] {
+    return this.interactiveProps;
   }
 }

@@ -2,6 +2,7 @@ import { SoundEffects } from './audio/SoundEffects';
 import { CaseManager } from './logic/CaseManager';
 import { Clue } from './logic/types';
 import { SceneManager } from './scene/SceneManager';
+import { RaycastHitInfo } from './scene/InteractionRaycaster';
 import { UIManager } from './ui/UIManager';
 
 // Import CSS
@@ -27,6 +28,7 @@ class App {
   private currentNearClue: Clue | null = null;
   private isNearNPC: boolean = false;
   private nearNPCName: string = '';
+  private hoveredClueHit: RaycastHitInfo | null = null;
 
   constructor() {
     const container = document.getElementById('container')!;
@@ -73,6 +75,38 @@ class App {
       this.isNearNPC = isNear;
       this.nearNPCName = name;
       this.updateInteractionPrompt();
+    };
+
+    // Step 4: Raycasted Hover & Click Clue Interaction
+    this.sceneManager.onClueHovered = (hit) => {
+      this.hoveredClueHit = hit;
+      if (this.ui.isAnyModalOpen()) {
+        this.sceneManager.raycaster.isEnabled = false;
+        return;
+      }
+      this.sceneManager.raycaster.isEnabled = true;
+      if (hit) {
+        this.ui.showPrompt(
+          true,
+          `<span class="kbd">CLICK</span> Inspect & Log: <strong>${hit.name}</strong>`
+        );
+      } else {
+        this.updateInteractionPrompt();
+      }
+    };
+
+    this.sceneManager.onClueClicked = (clueId) => {
+      if (this.ui.isAnyModalOpen()) return;
+
+      const clue = this.caseManager.discoverClue(clueId);
+      if (clue) {
+        this.sound.playPageFlip();
+        this.ui.showToast(`🔍 Discovered: ${clue.name}! Logged in notebook.`);
+        this.ui.updateHUD();
+        if (this.ui.notebookView.isOpen) {
+          this.ui.notebookView.render();
+        }
+      }
     };
 
     // Camera Snapshot Event
@@ -129,7 +163,12 @@ class App {
       return;
     }
 
-    if (this.currentNearClue) {
+    if (this.hoveredClueHit) {
+      this.ui.showPrompt(
+        true,
+        `<span class="kbd">CLICK</span> Inspect & Log: <strong>${this.hoveredClueHit.name}</strong>`
+      );
+    } else if (this.currentNearClue) {
       const c = this.currentNearClue;
       this.ui.showPrompt(
         true,

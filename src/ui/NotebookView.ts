@@ -36,7 +36,7 @@ export class NotebookView {
     else this.show();
   }
 
-  private render() {
+  public render() {
     const currentCase = this.caseManager.getCurrentCase();
     const discoveredClues = this.caseManager.getDiscoveredClues();
     const totalClues = currentCase.clues.length;

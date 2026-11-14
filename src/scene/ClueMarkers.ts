@@ -41,6 +41,7 @@ export class ClueMarkers {
       const ring = new THREE.Mesh(ringGeo, ringMat);
       ring.rotation.x = -Math.PI / 2;
       ring.position.y = 0.05;
+      ring.userData = { clueId: c.id, name: c.name, interactive: true };
       group.add(ring);
 
       // Floating forensic marker diamond
@@ -51,13 +52,19 @@ export class ClueMarkers {
       });
       const pin = new THREE.Mesh(pinGeo, pinMat);
       pin.position.y = 0.8;
+      pin.userData = { clueId: c.id, name: c.name, interactive: true };
       group.add(pin);
 
+      group.userData = { clueId: c.id, name: c.name, interactive: true };
       group.position.set(c.scenePosition.x, c.scenePosition.y, c.scenePosition.z);
       this.scene.add(group);
 
       this.visuals.push({ clue: c, group, pin, ring });
     });
+  }
+
+  public getInteractiveObjects(): THREE.Object3D[] {
+    return this.visuals.flatMap(v => [v.pin, v.ring]);
   }
 
   public update(time: number, playerPos: THREE.Vector3): Clue | null {

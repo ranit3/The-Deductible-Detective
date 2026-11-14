@@ -5,10 +5,12 @@ import { ClueMarkers } from './ClueMarkers';
 import { Environment } from './Environment';
 import { NPCClaimant } from './NPCClaimant';
 import { PlayerCharacter } from './PlayerCharacter';
+import { InteractionRaycaster, RaycastHitInfo } from './InteractionRaycaster';
 
 /**
  * LAYER 2: 3D SCENE MANAGER
  * STEP 3: Fixed / Angled 2.5D Camera & Graybox House Environment
+ * STEP 4: Raycasted Hover & Click Interaction System
  */
 export class SceneManager {
   public scene: THREE.Scene;
@@ -20,6 +22,7 @@ export class SceneManager {
   public player: PlayerCharacter;
   public claimantNPC: NPCClaimant;
   public clueMarkers: ClueMarkers;
+  public raycaster: InteractionRaycaster;
 
   private isRunning: boolean = true;
   private lastTime: number = performance.now();
@@ -27,6 +30,8 @@ export class SceneManager {
   // Callbacks for spatial game events
   public onNearClue: ((clue: Clue | null) => void) | null = null;
   public onNearNPC: ((isNear: boolean, npcName: string) => void) | null = null;
+  public onClueHovered: ((hit: RaycastHitInfo | null, screenX: number, screenY: number) => void) | null = null;
+  public onClueClicked: ((clueId: string, hit: RaycastHitInfo) => void) | null = null;
 
   constructor(container: HTMLElement, onReady?: () => void) {
     // 1. Scene & Sky
@@ -67,10 +72,20 @@ export class SceneManager {
     this.clueMarkers = new ClueMarkers(this.scene);
     this.player = new PlayerCharacter(this.scene, onReady);
 
-    // 7. Event Handlers
+    // 7. Raycasted Hover & Click Interaction System
+    this.raycaster = new InteractionRaycaster(this.camera, this.renderer.domElement);
+    this.updateRaycasterTargets();
+    this.raycaster.onHoverChange = (hit, x, y) => {
+      if (this.onClueHovered) this.onClueHovered(hit, x, y);
+    };
+    this.raycaster.onInteract = (clueId, hit) => {
+      if (this.onClueClicked) this.onClueClicked(clueId, hit);
+    };
+
+    // 8. Event Handlers
     window.addEventListener('resize', this.onResize.bind(this));
 
-    // 8. Start Loop
+    // 9. Start Loop
     requestAnimationFrame(this.animate.bind(this));
   }
 
@@ -100,6 +115,16 @@ export class SceneManager {
     // Position Claimant NPC near porch entrance
     this.claimantNPC.setup(claimantName, { x: 1.8, y: 0, z: -1.8 });
     this.clueMarkers.setClues(clues);
+    this.updateRaycasterTargets();
+  }
+
+  public updateRaycasterTargets() {
+    if (!this.raycaster) return;
+    const targets: THREE.Object3D[] = [
+      ...this.environment.getInteractiveObjects(),
+      ...this.clueMarkers.getInteractiveObjects()
+    ];
+    this.raycaster.setTargets(targets);
   }
 
   public captureViewportSnapshot(): string {

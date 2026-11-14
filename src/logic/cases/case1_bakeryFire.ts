@@ -200,6 +200,18 @@ export const case1BakeryFire: InsuranceCase = {
       requiresPhoto: true,
       discovered: false,
       photographed: false
+    },
+    {
+      id: 'forced_lock_back_door',
+      name: 'Forced Lock on Back Door',
+      category: 'tampering',
+      description: 'The brass latch bolt on the wooden door shows fresh pry-bar scratches and gouged wood splinters. However, the splinter angles reveal the crowbar force was applied from INSIDE the kitchen, not from outside.',
+      inspectorNote: 'STAGED BREAK-IN EVIDENCE: The owner claimed an external burglar or electrical fire. The forced latch was pried from within to fabricate a false point of entry.',
+      scenePosition: { x: 0.85, y: 1.15, z: 1.4 },
+      interactRadius: 2.0,
+      requiresPhoto: true,
+      discovered: false,
+      photographed: false
     }
   ],
 

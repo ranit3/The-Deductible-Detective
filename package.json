@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "tsx src/logic/__tests__/logic.test.ts && tsx src/scene/__tests__/interaction.test.ts"
   },
   "dependencies": {
     "three": "0.160.0"
