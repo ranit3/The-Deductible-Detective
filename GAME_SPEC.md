@@ -1,4 +1,4 @@
-# THE LOSS ADJUSTER (損害査定員) - GAME SPECIFICATION
+# THE DEDUCTIBLE DETECTIVE (損害査定員) - GAME SPECIFICATION
 
 ## 1. Core Gameplay Loop
 The game follows a strict, repeatable 8-step investigative loop:

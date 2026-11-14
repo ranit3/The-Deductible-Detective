@@ -1,5 +1,6 @@
 {
-  "name": "the-loss-adjuster",
+  "name": "the-deductible-detective",
+  "description": "A 3D forensic investigation game where you play an insurance loss adjuster uncovering moral hazards, staged casualties, and fraudulent claims across the city.",
   "private": true,
   "version": "1.0.0",
   "type": "module",

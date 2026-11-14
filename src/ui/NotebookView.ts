@@ -46,7 +46,7 @@ export class NotebookView {
         <!-- Leather Notebook Spine & Cover -->
         <div class="notebook-header">
           <div class="notebook-title-bar">
-            <span>📓 MUNICIPAL ADJUSTER NOTEBOOK</span>
+            <span>📓 THE DEDUCTIBLE DETECTIVE DOSSIER</span>
             <span class="notebook-case-tag">${currentCase.caseNumber}</span>
           </div>
           <button class="btn-close" id="btnCloseNotebook" title="Close Notebook (ESC)">✕</button>
