@@ -23,3 +23,4 @@
 
 7. **Always Run Tests Before Finishing:**
    - Every session and every logic change MUST pass the automated unit tests (`npx tsx src/logic/__tests__/logic.test.ts`) and TypeScript build check (`npx tsc --noEmit` / `npm run build`) before declaring a step complete.
+

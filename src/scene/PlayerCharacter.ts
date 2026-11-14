@@ -9,17 +9,19 @@ export interface BoundingBox2D {
 }
 
 /**
- * LAYER 2: 3D SKELETAL LOSS ADJUSTER CHARACTER
+ * LAYER 2: STEP 3 - PLAYER CHARACTER (CAPSULE + SKELETAL MODEL)
  * Pure 3D representation and movement mechanics.
  */
 export class PlayerCharacter {
   public group: THREE.Group;
+  private capsuleMesh: THREE.Mesh;
   private model: THREE.Group | null = null;
   private mixer: THREE.AnimationMixer | null = null;
   private actions: Record<string, THREE.AnimationAction> = {};
   private currentAction: string = 'Idle';
 
-  public position: THREE.Vector3 = new THREE.Vector3(0, 0, -4);
+  // Position starts on porch in front of the graybox house door (z: -2.5)
+  public position: THREE.Vector3 = new THREE.Vector3(0, 0, -2.5);
   private targetRotation: THREE.Quaternion = new THREE.Quaternion();
   private upVector: THREE.Vector3 = new THREE.Vector3(0, 1, 0);
 
@@ -34,6 +36,26 @@ export class PlayerCharacter {
     this.group = new THREE.Group();
     this.group.position.copy(this.position);
     scene.add(this.group);
+
+    // Initial Capsule Player Mesh (Instant visual presence, Step 2/3 requirement)
+    const capGeo = new THREE.CapsuleGeometry(0.35, 0.9, 8, 16);
+    const capMat = new THREE.MeshStandardMaterial({
+      color: 0x1E3A8A, // Navy Suit Blue
+      roughness: 0.55,
+      metalness: 0.2
+    });
+    this.capsuleMesh = new THREE.Mesh(capGeo, capMat);
+    this.capsuleMesh.position.y = 0.8;
+    this.capsuleMesh.castShadow = true;
+    this.group.add(this.capsuleMesh);
+
+    // Direction indicator visor on capsule
+    const visor = new THREE.Mesh(
+      new THREE.BoxGeometry(0.3, 0.12, 0.2),
+      new THREE.MeshBasicMaterial({ color: 0xFDE047 })
+    );
+    visor.position.set(0, 1.1, 0.28);
+    this.group.add(visor);
 
     this.bindInput();
     this.loadModel(onLoaded);
@@ -68,6 +90,9 @@ export class PlayerCharacter {
       this.model = gltf.scene;
       this.group.add(this.model!);
       this.model!.rotation.y = 0; // Model faces +Z
+
+      // Hide simple capsule when high-poly skeletal adjuster is attached
+      this.capsuleMesh.visible = false;
 
       // Navy suit material styling for Loss Adjuster
       this.model!.traverse((obj: any) => {
@@ -141,7 +166,7 @@ export class PlayerCharacter {
       if (onLoaded) onLoaded();
     };
 
-    // Check preloaded Base64 (instant offline loading)
+    // Check preloaded Base64
     if ((window as any).SOLDIER_GLB_B64) {
       try {
         const bin = atob((window as any).SOLDIER_GLB_B64);
@@ -205,8 +230,8 @@ export class PlayerCharacter {
         let nextX = this.position.x + step.x;
         let nextZ = this.position.z + step.z;
 
-        // Resolve collision against walls
-        const radius = 0.45;
+        // Resolve simple AABB wall collision (slides smoothly along walls)
+        const radius = 0.4;
         for (const b of colliders) {
           const minX = b.minX - radius;
           const maxX = b.maxX + radius;
@@ -226,8 +251,8 @@ export class PlayerCharacter {
         }
 
         // Clamp to map bounds
-        this.position.x = Math.max(-20, Math.min(20, nextX));
-        this.position.z = Math.max(-20, Math.min(22, nextZ));
+        this.position.x = Math.max(-16, Math.min(16, nextX));
+        this.position.z = Math.max(-12, Math.min(16, nextZ));
 
         // Smooth rotation to face movement heading
         const targetAngle = Math.atan2(moveDir.x, moveDir.z);
@@ -257,4 +282,3 @@ export class PlayerCharacter {
     this.group.position.copy(this.position);
   }
 }
-

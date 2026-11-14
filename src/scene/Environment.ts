@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import { BoundingBox2D } from './PlayerCharacter';
-import { Textures } from './Textures';
 
 /**
- * LAYER 2: 3D CRIME SCENE & MUNICIPAL CITY ENVIRONMENT
- * Renders the investigation building, physical evidence scene, and surrounding street.
+ * LAYER 2: STEP 3 - GRAYBOX ONE HOUSE
+ * Plain boxes for walls, a door, a smashed window, and a table.
+ * No decorative art yet; clean, functional, readable spatial geometry and collision.
  */
 export class Environment {
   private scene: THREE.Scene;
@@ -12,246 +12,172 @@ export class Environment {
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
-    this.buildWorld();
+    this.buildGrayboxWorld();
   }
 
-  private buildWorld() {
-    // 1. Street & Sidewalk Ground
-    const groundMat = new THREE.MeshStandardMaterial({
-      map: Textures.createCobbleTexture(),
-      roughness: 0.85,
-      metalness: 0.1
-    });
-    const ground = new THREE.Mesh(new THREE.BoxGeometry(48, 0.4, 48), groundMat);
+  private buildGrayboxWorld() {
+    // Neutral Graybox Materials
+    const groundMat = new THREE.MeshStandardMaterial({ color: 0x94A3B8, roughness: 0.85 }); // Neutral asphalt/ground
+    const floorMat = new THREE.MeshStandardMaterial({ color: 0xE2E8F0, roughness: 0.7 });  // House interior floor
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x64748B, roughness: 0.8 });   // Solid graybox walls
+    const trimMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.6 });   // Door/window frames & table
+    const glassMat = new THREE.MeshStandardMaterial({ color: 0x38BDF8, roughness: 0.2, transparent: true, opacity: 0.6 });
+
+    // 1. Exterior Ground Plane
+    const ground = new THREE.Mesh(new THREE.BoxGeometry(36, 0.4, 36), groundMat);
     ground.position.y = -0.2;
     ground.receiveShadow = true;
     this.scene.add(ground);
 
-    // 2. Incident Building: "Le Croissant Doré" Bakery & Kitchen (Center North: z: 2 to 14)
-    this.buildBakeryScene();
-
-    // 3. Surrounding Town Facades (Street context)
-    this.buildSurroundingCity();
-
-    // 4. Street Lamps & Trees
-    this.buildStreetDecorations();
-  }
-
-  private buildBakeryScene() {
-    const kGroup = new THREE.Group();
-    const w = 14, h = 4.2, d = 12;
-    const kw = w / 2, kd = d / 2;
-
-    // Kitchen Floor with Ceramic Tiles
-    const tileTex = Textures.createKitchenTile();
-    tileTex.repeat.set(4, 4);
-    const floorMat = new THREE.MeshStandardMaterial({ map: tileTex, roughness: 0.6 });
-    const floor = new THREE.Mesh(new THREE.BoxGeometry(w, 0.1, d), floorMat);
-    floor.position.set(0, 0.05, 7.0);
+    // 2. House Interior Floor (10m wide x 8m deep, centered around z = 5.0)
+    const floor = new THREE.Mesh(new THREE.BoxGeometry(10.0, 0.1, 8.0), floorMat);
+    floor.position.set(0, 0.05, 5.0);
     floor.receiveShadow = true;
     this.scene.add(floor);
 
-    // Kitchen Walls (Charred plaster and pale cream)
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0xFDFBF7, roughness: 0.85 });
-    const sootMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.95 }); // Soot scorched
+    // Front Entrance Walkway / Porch
+    const porch = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.08, 4.0), floorMat);
+    porch.position.set(0, 0.04, -1.0);
+    porch.receiveShadow = true;
+    this.scene.add(porch);
 
-    // North Back Wall (behind oven)
-    const backWall = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.4), sootMat);
-    backWall.position.set(0, h / 2, 7.0 + kd);
-    backWall.castShadow = true;
-    this.scene.add(backWall);
+    const h = 3.0; // Wall height
 
-    // West Side Wall
-    const westWall = new THREE.Mesh(new THREE.BoxGeometry(0.4, h, d), wallMat);
-    westWall.position.set(-kw, h / 2, 7.0);
+    // 3. Walls (Plain Boxes)
+    // A. North Wall (Back): 10m wide at z = 9.0
+    const northWall = new THREE.Mesh(new THREE.BoxGeometry(10.0, h, 0.4), wallMat);
+    northWall.position.set(0, h / 2, 9.0);
+    northWall.castShadow = true;
+    northWall.receiveShadow = true;
+    this.scene.add(northWall);
+    this.colliders.push({ minX: -5.2, maxX: 5.2, minZ: 8.8, maxZ: 9.2 });
+
+    // B. West Wall: 8m long at x = -5.0
+    const westWall = new THREE.Mesh(new THREE.BoxGeometry(0.4, h, 8.0), wallMat);
+    westWall.position.set(-5.0, h / 2, 5.0);
     westWall.castShadow = true;
+    westWall.receiveShadow = true;
     this.scene.add(westWall);
+    this.colliders.push({ minX: -5.2, maxX: -4.8, minZ: 0.8, maxZ: 9.2 });
 
-    // East Side Wall
-    const eastWall = new THREE.Mesh(new THREE.BoxGeometry(0.4, h, d), wallMat);
-    eastWall.position.set(kw, h / 2, 7.0);
-    eastWall.castShadow = true;
-    this.scene.add(eastWall);
+    // C. East Wall (With Smashed Window opening at z = 4.0 to 6.0)
+    // East Wall North Segment (z: 6.0 to 9.0, length 3.0m)
+    const eastWallN = new THREE.Mesh(new THREE.BoxGeometry(0.4, h, 3.0), wallMat);
+    eastWallN.position.set(5.0, h / 2, 7.5);
+    eastWallN.castShadow = true;
+    eastWallN.receiveShadow = true;
+    this.scene.add(eastWallN);
+    this.colliders.push({ minX: 4.8, maxX: 5.2, minZ: 6.0, maxZ: 9.2 });
 
-    // South Open Storefront Entrance with French Awning
-    const frontWallL = new THREE.Mesh(new THREE.BoxGeometry(4.5, h, 0.4), wallMat);
-    frontWallL.position.set(-kw + 2.25, h / 2, 7.0 - kd);
-    this.scene.add(frontWallL);
+    // East Wall South Segment (z: 1.0 to 4.0, length 3.0m)
+    const eastWallS = new THREE.Mesh(new THREE.BoxGeometry(0.4, h, 3.0), wallMat);
+    eastWallS.position.set(5.0, h / 2, 2.5);
+    eastWallS.castShadow = true;
+    eastWallS.receiveShadow = true;
+    this.scene.add(eastWallS);
+    this.colliders.push({ minX: 4.8, maxX: 5.2, minZ: 0.8, maxZ: 4.0 });
 
-    const frontWallR = new THREE.Mesh(new THREE.BoxGeometry(4.5, h, 0.4), wallMat);
-    frontWallR.position.set(kw - 2.25, h / 2, 7.0 - kd);
-    this.scene.add(frontWallR);
+    // SMASHED WINDOW (Opening between z = 4.0 and z = 6.0)
+    // Lower Sill Wall (height: 0.9m)
+    const sill = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.9, 2.0), wallMat);
+    sill.position.set(5.0, 0.45, 5.0);
+    sill.castShadow = true;
+    this.scene.add(sill);
+    // Upper Lintel / Header Wall (height: 0.6m from y = 2.4 to 3.0)
+    const lintel = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.6, 2.0), wallMat);
+    lintel.position.set(5.0, 2.7, 5.0);
+    lintel.castShadow = true;
+    this.scene.add(lintel);
 
-    // Striped Awning above entrance
-    const awningMat = new THREE.MeshStandardMaterial({ color: 0xF97316, roughness: 0.7 });
-    const awning = new THREE.Mesh(new THREE.BoxGeometry(5.4, 0.3, 2.4), awningMat);
-    awning.position.set(0, 3.8, 7.0 - kd - 1.0);
-    awning.rotation.x = 0.25;
-    this.scene.add(awning);
+    // Broken Glass Shards on Sill & Floor
+    const shard1 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.45, 0.5), glassMat);
+    shard1.position.set(5.0, 1.1, 4.4);
+    shard1.rotation.z = 0.15;
+    this.scene.add(shard1);
 
-    // Bakery Signboard
-    const signMat = new THREE.MeshStandardMaterial({ color: 0xFEF08A, metalness: 0.2 });
-    const sign = new THREE.Mesh(new THREE.BoxGeometry(6.0, 0.9, 0.15), signMat);
-    sign.position.set(0, 4.4, 7.0 - kd - 0.1);
-    this.scene.add(sign);
+    const shard2 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.35, 0.4), glassMat);
+    shard2.position.set(5.0, 1.05, 5.6);
+    shard2.rotation.z = -0.18;
+    this.scene.add(shard2);
 
-    // Colliders for exterior bakery walls (Leaves open wide door at center z: 1.0, x: -2.5 to 2.5)
-    this.colliders.push({ minX: -kw - 0.4, maxX: kw + 0.4, minZ: 7.0 + kd - 0.4, maxZ: 7.0 + kd + 0.4 }); // North
-    this.colliders.push({ minX: -kw - 0.4, maxX: -kw + 0.4, minZ: 7.0 - kd, maxZ: 7.0 + kd });             // West
-    this.colliders.push({ minX: kw - 0.4, maxX: kw + 0.4, minZ: 7.0 - kd, maxZ: 7.0 + kd });               // East
-    this.colliders.push({ minX: -kw, maxX: -kw + 4.5, minZ: 7.0 - kd - 0.4, maxZ: 7.0 - kd + 0.4 });       // Front L
-    this.colliders.push({ minX: kw - 4.5, maxX: kw, minZ: 7.0 - kd - 0.4, maxZ: 7.0 - kd + 0.4 });        // Front R
-
-    // --- 3D FORENSIC CLUE PROPS INSIDE THE KITCHEN ---
-
-    // A. CLUE: Charred Liquid Accelerant V-Burn Mark on Floor (at x: 0, z: 7.0)
-    const burnMat = new THREE.MeshBasicMaterial({
-      map: Textures.createBurnMarkTexture(),
-      transparent: true,
-      depthWrite: false
-    });
-    const burnDecal = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 3.6), burnMat);
-    burnDecal.rotation.x = -Math.PI / 2;
-    burnDecal.position.set(0, 0.11, 7.0);
-    this.scene.add(burnDecal);
-
-    // B. CLUE: Commercial Deck Oven (at x: -3.8, z: 9.5)
-    const ovenMat = new THREE.MeshStandardMaterial({ color: 0x64748B, metalness: 0.8, roughness: 0.3 });
-    const oven = new THREE.Mesh(new THREE.BoxGeometry(2.8, 2.2, 1.8), ovenMat);
-    oven.position.set(-3.8, 1.1, 9.5);
-    oven.castShadow = true;
-    this.scene.add(oven);
-    this.colliders.push({ minX: -5.2, maxX: -2.4, minZ: 8.6, maxZ: 10.4 });
-
-    // Glass oven door (Undamaged Interior Clue)
-    const glassMat = new THREE.MeshStandardMaterial({ color: 0x38BDF8, roughness: 0.1, metalness: 0.9 });
-    const ovenDoor = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.9, 0.1), glassMat);
-    ovenDoor.position.set(-3.8, 1.2, 8.55);
-    this.scene.add(ovenDoor);
-
-    // CLUE: Unplugged 240V Industrial Power Cable on Floor (at x: -3.8, z: 7.6)
-    const plugCableMat = new THREE.MeshStandardMaterial({ color: 0x1E293B, roughness: 0.9 });
-    const cable = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.6, 8), plugCableMat);
-    cable.rotation.z = Math.PI / 3;
-    cable.position.set(-3.8, 0.06, 7.6);
-    this.scene.add(cable);
-
-    const plugHead = new THREE.Mesh(
-      new THREE.BoxGeometry(0.25, 0.15, 0.25),
-      new THREE.MeshStandardMaterial({ color: 0xF59E0B, metalness: 0.5 })
-    );
-    plugHead.position.set(-3.5, 0.08, 7.6);
-    this.scene.add(plugHead);
-
-    // C. CLUE: Wooden Prep Table with Flour Sacks & Hidden Kerosene Can (at x: 3.5, z: 8.5)
-    const tableMat = new THREE.MeshStandardMaterial({ color: 0x78350F, roughness: 0.8 });
-    const table = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.1, 2.4), tableMat);
-    table.position.set(3.5, 0.55, 8.5);
-    table.castShadow = true;
-    this.scene.add(table);
-    this.colliders.push({ minX: 2.3, maxX: 4.7, minZ: 7.3, maxZ: 9.7 });
-
-    // Flour Sacks on table
-    const sackMat = new THREE.MeshStandardMaterial({ color: 0xFEF3C7, roughness: 0.9 });
-    const sack1 = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.5, 0.9), sackMat);
-    sack1.position.set(3.2, 1.35, 8.2);
-    this.scene.add(sack1);
-
-    // CLUE: Concealed Kerosene Canister on side of table
-    const canMat = new THREE.MeshStandardMaterial({ color: 0xDC2626, metalness: 0.6, roughness: 0.4 });
-    const can = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.55, 12), canMat);
-    can.position.set(4.2, 0.3, 9.2);
-    can.castShadow = true;
-    this.scene.add(can);
-
-    // D. CLUE: Back Office Desk with Eviction Letter & Debt Ledger (at x: -4.5, z: 4.0)
-    const desk = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.0, 1.2), tableMat);
-    desk.position.set(-4.5, 0.5, 4.0);
-    desk.castShadow = true;
-    this.scene.add(desk);
-    this.colliders.push({ minX: -5.4, maxX: -3.6, minZ: 3.4, maxZ: 4.6 });
-
-    // White paper ledger
-    const paper = new THREE.Mesh(
-      new THREE.BoxGeometry(0.4, 0.02, 0.5),
-      new THREE.MeshBasicMaterial({ color: 0xFFFFFF })
-    );
-    paper.position.set(-4.5, 1.02, 4.0);
-    this.scene.add(paper);
-  }
-
-  private buildSurroundingCity() {
-    // 1. Loss Adjuster Bureau HQ (South: z: -16)
-    const hqMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.8 });
-    const hq = new THREE.Mesh(new THREE.BoxGeometry(16, 9, 8), hqMat);
-    hq.position.set(0, 4.5, -16);
-    hq.castShadow = true;
-    this.scene.add(hq);
-    this.colliders.push({ minX: -8.5, maxX: 8.5, minZ: -20, maxZ: -12 });
-
-    // Columns
-    const colMat = new THREE.MeshStandardMaterial({ color: 0xF8FAFC, roughness: 0.6 });
-    [-4, -1.3, 1.3, 4].forEach(cx => {
-      const col = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.36, 5.0, 16), colMat);
-      col.position.set(cx, 2.5, -11.5);
-      this.scene.add(col);
+    // Glass fragments on floor inside
+    [-0.3, 0.2, 0.6].forEach((dz, i) => {
+      const glassFloor = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.04, 0.25), glassMat);
+      glassFloor.position.set(4.4 + (i % 2) * 0.3, 0.07, 5.0 + dz);
+      glassFloor.rotation.y = i * 0.8;
+      this.scene.add(glassFloor);
     });
 
-    // 2. West Apartment Block (x: -16, z: -2)
-    const aptMat = new THREE.MeshStandardMaterial({ color: 0x94A3B8, roughness: 0.8 });
-    const apt = new THREE.Mesh(new THREE.BoxGeometry(9, 10, 14), aptMat);
-    apt.position.set(-16, 5.0, -2);
-    apt.castShadow = true;
-    this.scene.add(apt);
-    this.colliders.push({ minX: -21, maxX: -11.5, minZ: -9, maxZ: 5 });
+    // Window collider (blocks walking through the wall/window)
+    this.colliders.push({ minX: 4.8, maxX: 5.2, minZ: 4.0, maxZ: 6.0 });
 
-    // 3. East Noodle Shop (x: 16, z: -2)
-    const noodleMat = new THREE.MeshStandardMaterial({ map: Textures.createBrickTexture(), roughness: 0.8 });
-    const noodle = new THREE.Mesh(new THREE.BoxGeometry(9, 8, 14), noodleMat);
-    noodle.position.set(16, 4.0, -2);
-    noodle.castShadow = true;
-    this.scene.add(noodle);
-    this.colliders.push({ minX: 11.5, maxX: 21, minZ: -9, maxZ: 5 });
-  }
+    // D. South Wall (Front, with Open Doorway at center x: -1.0 to 1.0)
+    // South Wall Left Segment (x: -5.0 to -1.0, length 4.0m)
+    const southWallL = new THREE.Mesh(new THREE.BoxGeometry(4.0, h, 0.4), wallMat);
+    southWallL.position.set(-3.0, h / 2, 1.0);
+    southWallL.castShadow = true;
+    southWallL.receiveShadow = true;
+    this.scene.add(southWallL);
+    this.colliders.push({ minX: -5.2, maxX: -1.0, minZ: 0.8, maxZ: 1.2 });
 
-  private buildStreetDecorations() {
-    // Streetlamps with warm inspection lights
-    [[-4.5, -4], [4.5, -4], [-4.5, 0], [4.5, 0]].forEach(([lx, lz]) => {
-      const pole = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.1, 0.15, 3.8),
-        new THREE.MeshStandardMaterial({ color: 0x1E293B })
-      );
-      pole.position.set(lx, 1.9, lz);
-      pole.castShadow = true;
-      this.scene.add(pole);
+    // South Wall Right Segment (x: 1.0 to 5.0, length 4.0m)
+    const southWallR = new THREE.Mesh(new THREE.BoxGeometry(4.0, h, 0.4), wallMat);
+    southWallR.position.set(3.0, h / 2, 1.0);
+    southWallR.castShadow = true;
+    southWallR.receiveShadow = true;
+    this.scene.add(southWallR);
+    this.colliders.push({ minX: 1.0, maxX: 5.2, minZ: 0.8, maxZ: 1.2 });
 
-      const light = new THREE.PointLight(0xFEF08A, 0.7, 10);
-      light.position.set(lx, 3.8, lz);
-      this.scene.add(light);
+    // Doorway Header (above door opening from y = 2.4 to 3.0)
+    const doorHeader = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.6, 0.4), wallMat);
+    doorHeader.position.set(0, 2.7, 1.0);
+    doorHeader.castShadow = true;
+    this.scene.add(doorHeader);
 
-      this.colliders.push({ minX: lx - 0.3, maxX: lx + 0.3, minZ: lz - 0.3, maxZ: lz + 0.3 });
+    // Door Frame & Open Door Slab (Ajar at ~45° angle)
+    const doorFrameMat = trimMat;
+    const doorSlab = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2.3, 1.1), doorFrameMat);
+    doorSlab.position.set(0.85, 1.15, 1.4);
+    doorSlab.rotation.y = 0.7; // Swung inward into room
+    doorSlab.castShadow = true;
+    this.scene.add(doorSlab);
+
+    // 4. Graybox Table (Center-Left of the Room: x: -1.8, z: 5.2)
+    const tableTop = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.12, 1.4), trimMat);
+    tableTop.position.set(-1.8, 0.85, 5.2);
+    tableTop.castShadow = true;
+    tableTop.receiveShadow = true;
+    this.scene.add(tableTop);
+
+    // 4 Table Legs
+    const legGeo = new THREE.BoxGeometry(0.12, 0.8, 0.12);
+    [
+      [-1.8 - 1.0, 5.2 - 0.55],
+      [-1.8 + 1.0, 5.2 - 0.55],
+      [-1.8 - 1.0, 5.2 + 0.55],
+      [-1.8 + 1.0, 5.2 + 0.55]
+    ].forEach(([lx, lz]) => {
+      const leg = new THREE.Mesh(legGeo, trimMat);
+      leg.position.set(lx, 0.4, lz);
+      leg.castShadow = true;
+      this.scene.add(leg);
     });
 
-    // Leafy Trees along curb
-    [[-8, -8], [8, -8]].forEach(([tx, tz]) => {
-      const trunk = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.2, 0.3, 2.0),
-        new THREE.MeshStandardMaterial({ color: 0x78350F })
-      );
-      trunk.position.set(tx, 1.0, tz);
-      trunk.castShadow = true;
-      this.scene.add(trunk);
+    // Table Collider
+    this.colliders.push({ minX: -3.1, maxX: -0.5, minZ: 4.4, maxZ: 6.0 });
 
-      const leaves = new THREE.Mesh(
-        new THREE.DodecahedronGeometry(1.6),
-        new THREE.MeshStandardMaterial({ color: 0x15803D })
-      );
-      leaves.position.set(tx, 2.6, tz);
-      leaves.castShadow = true;
-      this.scene.add(leaves);
+    // 5. Overturned Chair near Table
+    const chair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.1, 0.55), trimMat);
+    chair.position.set(-0.2, 0.25, 5.2);
+    chair.rotation.z = 1.1; // Knocked over on its side
+    chair.castShadow = true;
+    this.scene.add(chair);
 
-      this.colliders.push({ minX: tx - 0.4, maxX: tx + 0.4, minZ: tz - 0.4, maxZ: tz + 0.4 });
-    });
+    // 6. Cabinet against North Wall (x: 2.5, z: 8.5)
+    const cabinet = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.8, 0.8), trimMat);
+    cabinet.position.set(2.5, 0.9, 8.5);
+    cabinet.castShadow = true;
+    this.scene.add(cabinet);
+    this.colliders.push({ minX: 1.3, maxX: 3.7, minZ: 8.0, maxZ: 9.0 });
   }
 }
-

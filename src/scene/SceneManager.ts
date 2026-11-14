@@ -8,7 +8,7 @@ import { PlayerCharacter } from './PlayerCharacter';
 
 /**
  * LAYER 2: 3D SCENE MANAGER
- * Pure Three.js rendering, lighting, camera controls, and spatial event detection.
+ * STEP 3: Fixed / Angled 2.5D Camera & Graybox House Environment
  */
 export class SceneManager {
   public scene: THREE.Scene;
@@ -34,9 +34,9 @@ export class SceneManager {
     this.scene.background = new THREE.Color(0xBAE6FD); // Crisp daytime pastel sky
     this.scene.fog = new THREE.FogExp2(0xBAE6FD, 0.008);
 
-    // 2. Camera
+    // 2. Angled 2.5D Camera (Pitch ~48°, comfortable top-down view into graybox room)
     this.camera = new THREE.PerspectiveCamera(46, window.innerWidth / window.innerHeight, 0.1, 200);
-    this.camera.position.set(0, 10, -14); // Elevated top-down investigation view
+    this.camera.position.set(0, 10.5, -9.5);
 
     // 3. Renderer
     this.renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
@@ -48,20 +48,20 @@ export class SceneManager {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     container.appendChild(this.renderer.domElement);
 
-    // 4. OrbitControls
+    // 4. OrbitControls with smooth target tracking
     this.orbitControls = new OrbitControls(this.camera, this.renderer.domElement);
-    this.orbitControls.target.set(0, 1.2, -4);
+    this.orbitControls.target.set(0, 1.2, -2.5);
     this.orbitControls.enableDamping = true;
     this.orbitControls.dampingFactor = 0.08;
     this.orbitControls.maxPolarAngle = Math.PI / 2 - 0.05;
     this.orbitControls.minDistance = 3.5;
-    this.orbitControls.maxDistance = 45;
+    this.orbitControls.maxDistance = 40;
     this.orbitControls.update();
 
     // 5. Lighting
     this.setupLights();
 
-    // 6. Scene Components
+    // 6. Scene Components (Graybox House, Player, NPC, Clue Markers)
     this.environment = new Environment(this.scene);
     this.claimantNPC = new NPCClaimant(this.scene);
     this.clueMarkers = new ClueMarkers(this.scene);
@@ -79,31 +79,30 @@ export class SceneManager {
     this.scene.add(hemiLight);
 
     const dirLight = new THREE.DirectionalLight(0xFFFBEB, 1.35);
-    dirLight.position.set(18, 40, -16);
+    dirLight.position.set(16, 35, -14);
     dirLight.castShadow = true;
     dirLight.shadow.mapSize.set(2048, 2048);
     dirLight.shadow.camera.near = 0.5;
     dirLight.shadow.camera.far = 80;
-    dirLight.shadow.camera.left = -24;
-    dirLight.shadow.camera.right = 24;
-    dirLight.shadow.camera.top = 24;
-    dirLight.shadow.camera.bottom = -24;
+    dirLight.shadow.camera.left = -20;
+    dirLight.shadow.camera.right = 20;
+    dirLight.shadow.camera.top = 20;
+    dirLight.shadow.camera.bottom = -20;
     this.scene.add(dirLight);
 
-    // Subtle inspection rim light
-    const fillLight = new THREE.DirectionalLight(0x38BDF8, 0.35);
-    fillLight.position.set(-18, 20, 20);
-    this.scene.add(fillLight);
+    // Interior Soft Fill Light for room inspection
+    const interiorLight = new THREE.PointLight(0xFFFBEB, 0.8, 14);
+    interiorLight.position.set(0, 2.8, 5.0);
+    this.scene.add(interiorLight);
   }
 
   public setupCaseScene(claimantName: string, clues: Clue[]) {
-    // Position Claimant NPC near bakery entrance (x: -2.5, z: 0.5)
-    this.claimantNPC.setup(claimantName, { x: -2.2, y: 0, z: 0.8 });
+    // Position Claimant NPC near porch entrance
+    this.claimantNPC.setup(claimantName, { x: 1.8, y: 0, z: -1.8 });
     this.clueMarkers.setClues(clues);
   }
 
   public captureViewportSnapshot(): string {
-    // Renders one clean frame and exports data URL for evidence photos
     this.renderer.render(this.scene, this.camera);
     return this.renderer.domElement.toDataURL('image/jpeg', 0.85);
   }
@@ -121,25 +120,27 @@ export class SceneManager {
     const delta = Math.min((now - this.lastTime) / 1000, 0.1);
     this.lastTime = now;
 
-    // 1. Update Player Movement & Sync Camera
+    // 1. Update Player Locomotion & Simple AABB Wall Collision
     const deltaMove = this.player.update(delta, this.camera, this.environment.colliders, true);
+
+    // 2. Synchronous 2.5D Camera Follow (Camera & Target translate together by deltaMove)
     this.camera.position.add(deltaMove);
     this.orbitControls.target.add(deltaMove);
     this.orbitControls.update();
 
-    // 2. Update Clue Markers & Proximity Detection
+    // 3. Update Clue Markers & Proximity Detection
     const nearbyClue = this.clueMarkers.update(now * 0.001, this.player.position);
     if (this.onNearClue) {
       this.onNearClue(nearbyClue);
     }
 
-    // 3. Update NPC Claimant & Dialogue Proximity
+    // 4. Update NPC Claimant Proximity
     const isNearNPC = this.claimantNPC.update(now * 0.001, this.player.position);
     if (this.onNearNPC) {
       this.onNearNPC(isNearNPC, this.claimantNPC.name);
     }
 
-    // 4. Render
+    // 5. Render
     this.renderer.render(this.scene, this.camera);
   }
 
@@ -148,4 +149,3 @@ export class SceneManager {
     window.removeEventListener('resize', this.onResize.bind(this));
   }
 }
-
