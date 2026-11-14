@@ -617,4 +617,21 @@ export class PlayerCharacter {
     this.position.set(x, y, z);
     this.group.position.copy(this.position);
   }
+
+  /**
+   * Toggles First-Person Perspective (hides character mesh when inside room)
+   */
+  public setFirstPerson(isFPP: boolean) {
+    if (isFPP) {
+      if (this.model) this.model.visible = false;
+      this.proceduralRoot.visible = false;
+    } else {
+      if (this.model) {
+        this.model.visible = true;
+        this.proceduralRoot.visible = false;
+      } else {
+        this.proceduralRoot.visible = true;
+      }
+    }
+  }
 }

@@ -212,4 +212,18 @@ if (!player.isGrounded || Math.abs(player.position.y - 0.10) > 0.001) {
 }
 console.log(`✓ Player landed cleanly on floor surface at y = ${player.position.y.toFixed(2)}m (isGrounded: ${player.isGrounded})`);
 
+// 7. Test FPP / TPP Character Visibility Toggle
+console.log('Testing FPP / TPP Character Visibility Toggle...');
+player.setFirstPerson(true);
+if ((player as any).proceduralRoot.visible) {
+  throw new Error('Expected procedural character mesh to be hidden in FPP mode');
+}
+console.log('✓ Character model hidden in FPP (prevents camera clipping inside room)');
+
+player.setFirstPerson(false);
+if (!(player as any).proceduralRoot.visible) {
+  throw new Error('Expected procedural character mesh to be restored in TPP mode');
+}
+console.log('✓ Character model restored in TPP (detective visible on exterior porch/street)');
+
 console.log('--- ALL CHARACTER LOCOMOTION & VISUALS TESTS PASSED SUCCESSFULLY! ---');

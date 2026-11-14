@@ -110,6 +110,15 @@ class App {
       }
     };
 
+    // Dynamic FPP / TPP View Transition Feedback
+    this.sceneManager.onModeChange = (isFPP) => {
+      if (isFPP) {
+        this.ui.showToast('👁️ Room Interior: First-Person Mode (FPP) • Drag / Arrows to Look');
+      } else {
+        this.ui.showToast('🏃 Porch & Exterior: Third-Person Mode (TPP)');
+      }
+    };
+
     // Camera Snapshot Event
     this.ui.cameraView.onCapturePhoto = (targetClue) => {
       this.sound.playCameraShutter();

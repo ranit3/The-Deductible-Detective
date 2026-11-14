@@ -30,6 +30,14 @@ export class SceneManager {
   private isRunning: boolean = true;
   private lastTime: number = performance.now();
 
+  // Dynamic Camera Mode: FPP inside room, TPP outside on porch/street
+  public isFPP: boolean = false;
+  public fppYaw: number = Math.PI;
+  public fppPitch: number = -0.05;
+  private isDraggingFPP: boolean = false;
+  private lastPointerPos = { x: 0, y: 0 };
+  public onModeChange?: (isFPP: boolean) => void;
+
   // Callbacks for spatial game events
   public onNearClue: ((clue: Clue | null) => void) | null = null;
   public onNearNPC: ((isNear: boolean, npcName: string) => void) | null = null;
@@ -90,6 +98,7 @@ export class SceneManager {
 
     // 9. Event Handlers
     window.addEventListener('resize', this.onResize.bind(this));
+    this.bindFPPEvents();
 
     // 10. Start Loop
     requestAnimationFrame(this.animate.bind(this));
@@ -186,37 +195,99 @@ export class SceneManager {
     this.renderer.render(this.scene, this.camera);
   }
 
+  private bindFPPEvents() {
+    this.renderer.domElement.addEventListener('pointerdown', (e: PointerEvent) => {
+      if (this.isFPP) {
+        this.isDraggingFPP = true;
+        this.lastPointerPos = { x: e.clientX, y: e.clientY };
+      }
+    });
+
+    window.addEventListener('pointermove', (e: PointerEvent) => {
+      if (this.isFPP && this.isDraggingFPP) {
+        const dx = e.clientX - this.lastPointerPos.x;
+        const dy = e.clientY - this.lastPointerPos.y;
+        this.lastPointerPos = { x: e.clientX, y: e.clientY };
+
+        const sensitivity = 0.003;
+        this.fppYaw -= dx * sensitivity;
+        this.fppPitch = Math.max(-1.25, Math.min(1.25, this.fppPitch - dy * sensitivity));
+      }
+    });
+
+    window.addEventListener('pointerup', () => {
+      this.isDraggingFPP = false;
+    });
+
+    window.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (this.isFPP) {
+        if (e.code === 'ArrowLeft') this.fppYaw += 0.08;
+        if (e.code === 'ArrowRight') this.fppYaw -= 0.08;
+        if (e.code === 'ArrowUp') this.fppPitch = Math.min(1.25, this.fppPitch + 0.06);
+        if (e.code === 'ArrowDown') this.fppPitch = Math.max(-1.25, this.fppPitch - 0.06);
+      }
+    });
+  }
+
   /**
-   * Dynamically transitions camera angle and cutaway walls based on player location.
-   * When inside: steeper pitch (~63°) and cutaway front wall for full diorama visibility.
-   * When outside: comfortable angled 2.5D view (~48°) of building entrance and porch.
+   * Dynamically transitions camera between:
+   *  - First-Person Perspective (FPP) when inside casualty room (eye-level inspection view)
+   *  - Third-Person Perspective (TPP) when outside on porch/street (2.5D angled diorama view)
    */
   private updateDynamicCamera(delta: number) {
     const isInside = this.player.position.z > 0.8 && Math.abs(this.player.position.x) < 5.0;
 
-    // 1. Cutaway front wall: fade to translucent when inside the room
-    this.environment.setCutaway(isInside);
+    // Check FPP/TPP Mode Transition
+    if (isInside && !this.isFPP) {
+      // Transition from Exterior (TPP) to Interior (FPP)
+      this.isFPP = true;
+      this.player.setFirstPerson(true);
+      this.orbitControls.enabled = false;
+      this.fppYaw = Math.PI; // Face forward (+Z) into the room
+      this.fppPitch = -0.05;
+      if (this.onModeChange) this.onModeChange(true);
+    } else if (!isInside && this.isFPP) {
+      // Transition from Interior (FPP) to Exterior (TPP)
+      this.isFPP = false;
+      this.player.setFirstPerson(false);
+      this.orbitControls.enabled = true;
+      this.orbitControls.target.set(this.player.position.x, this.player.position.y + 1.2, this.player.position.z);
+      if (this.onModeChange) this.onModeChange(false);
+    }
 
-    // 2. Dynamic camera offsets
-    const idealOffset = isInside
-      ? new THREE.Vector3(0, 9.6, -5.0)
-      : new THREE.Vector3(0, 8.6, -7.6);
+    if (this.isFPP) {
+      // --- FIRST-PERSON PERSPECTIVE (FPP) ---
+      // Position camera directly at detective's eye height (1.62m)
+      const eyeHeight = 1.62;
+      this.camera.position.set(
+        this.player.position.x,
+        this.player.position.y + eyeHeight,
+        this.player.position.z
+      );
 
-    const targetLookAt = new THREE.Vector3(
-      this.player.position.x,
-      this.player.position.y + (isInside ? 1.0 : 1.2),
-      this.player.position.z
-    );
+      // Camera rotation controlled by yaw (horizontal) and pitch (vertical look)
+      const euler = new THREE.Euler(this.fppPitch, this.fppYaw, 0, 'YXZ');
+      this.camera.quaternion.setFromEuler(euler);
+    } else {
+      // --- THIRD-PERSON PERSPECTIVE (TPP) ---
+      // Angled 2.5D view looking at the porch, building facade, and claimant
+      const idealOffset = new THREE.Vector3(0, 8.6, -7.6);
+      const targetLookAt = new THREE.Vector3(
+        this.player.position.x,
+        this.player.position.y + 1.2,
+        this.player.position.z
+      );
 
-    const targetCamPos = this.player.position.clone().add(idealOffset);
+      const targetCamPos = this.player.position.clone().add(idealOffset);
 
-    // Smoothly interpolate camera position and orbit target
-    const camLerp = Math.min(1.0, 4.5 * delta);
-    const targetLerp = Math.min(1.0, 7.5 * delta);
+      // Smoothly interpolate camera position and orbit target
+      const camLerp = Math.min(1.0, 4.5 * delta);
+      const targetLerp = Math.min(1.0, 7.5 * delta);
 
-    this.camera.position.lerp(targetCamPos, camLerp);
-    this.orbitControls.target.lerp(targetLookAt, targetLerp);
-    this.orbitControls.update();
+      this.camera.position.lerp(targetCamPos, camLerp);
+      this.orbitControls.target.lerp(targetLookAt, targetLerp);
+      this.orbitControls.update();
+    }
   }
 
   public dispose() {
