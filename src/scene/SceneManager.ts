@@ -160,13 +160,12 @@ export class SceneManager {
     const delta = Math.min((now - this.lastTime) / 1000, 0.1);
     this.lastTime = now;
 
-    // 1. Update Player Locomotion & Simple AABB Wall Collision
-    const deltaMove = this.player.update(delta, this.camera, this.environment.colliders, true);
+    // 1. Update Player Locomotion, Jumping & Elevation
+    const groundHeightFn = (x: number, z: number) => this.environment.getGroundHeight(x, z);
+    this.player.update(delta, this.camera, this.environment.colliders, true, groundHeightFn);
 
-    // 2. Synchronous 2.5D Camera Follow (Camera & Target translate together by deltaMove)
-    this.camera.position.add(deltaMove);
-    this.orbitControls.target.add(deltaMove);
-    this.orbitControls.update();
+    // 2. Dynamic Adaptive Camera (Interior Diorama vs Exterior Porch)
+    this.updateDynamicCamera(delta);
 
     // 3. Update Clue Markers & Proximity Detection
     const nearbyClue = this.clueMarkers.update(now * 0.001, this.player.position);
@@ -185,6 +184,39 @@ export class SceneManager {
 
     // 6. Render
     this.renderer.render(this.scene, this.camera);
+  }
+
+  /**
+   * Dynamically transitions camera angle and cutaway walls based on player location.
+   * When inside: steeper pitch (~63°) and cutaway front wall for full diorama visibility.
+   * When outside: comfortable angled 2.5D view (~48°) of building entrance and porch.
+   */
+  private updateDynamicCamera(delta: number) {
+    const isInside = this.player.position.z > 0.8 && Math.abs(this.player.position.x) < 5.0;
+
+    // 1. Cutaway front wall: fade to translucent when inside the room
+    this.environment.setCutaway(isInside);
+
+    // 2. Dynamic camera offsets
+    const idealOffset = isInside
+      ? new THREE.Vector3(0, 9.6, -5.0)
+      : new THREE.Vector3(0, 8.6, -7.6);
+
+    const targetLookAt = new THREE.Vector3(
+      this.player.position.x,
+      this.player.position.y + (isInside ? 1.0 : 1.2),
+      this.player.position.z
+    );
+
+    const targetCamPos = this.player.position.clone().add(idealOffset);
+
+    // Smoothly interpolate camera position and orbit target
+    const camLerp = Math.min(1.0, 4.5 * delta);
+    const targetLerp = Math.min(1.0, 7.5 * delta);
+
+    this.camera.position.lerp(targetCamPos, camLerp);
+    this.orbitControls.target.lerp(targetLookAt, targetLerp);
+    this.orbitControls.update();
   }
 
   public dispose() {

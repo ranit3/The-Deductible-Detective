@@ -156,4 +156,60 @@ if (fullWalkWeight < 0.99) {
 }
 console.log(`✓ Walk animation reached full weight: ${fullWalkWeight.toFixed(2)} (Prevents T-pose sliding)`);
 
+// 6. Test Jumping & Height Level Configuration
+console.log('Testing Jump & Floor Height Elevation Configuration...');
+const groundSampler = (x: number, z: number) => {
+  if (x >= -5.0 && x <= 5.0 && z >= 0.8 && z <= 9.0) return 0.10;
+  if (x >= -1.8 && x <= 1.8 && z >= -3.5 && z < 0.8) return 0.10;
+  return 0.0;
+};
+
+// Check floor elevation on porch & inside room
+const porchH = groundSampler(0, -2.0);
+const roomH = groundSampler(0, 5.0);
+const yardH = groundSampler(10, 10);
+
+if (porchH !== 0.10 || roomH !== 0.10 || yardH !== 0.0) {
+  throw new Error(`Invalid ground heights sampled! Porch: ${porchH}, Room: ${roomH}, Yard: ${yardH}`);
+}
+console.log(`✓ Floor heights configured: Porch = ${porchH}m, Room = ${roomH}m, Yard = ${yardH}m`);
+
+// Verify player stays on top of floor (y = 0.10) when inside room (no sunken shoes)
+(player as any).keys.w = false;
+(player as any).keys.s = false;
+(player as any).keys.a = false;
+(player as any).keys.d = false;
+player.setPosition(0, 0.10, 5.0);
+player.update(0.1, camera, [], true, groundSampler);
+if (Math.abs(player.position.y - 0.10) > 0.001) {
+  throw new Error(`Player shoes sunk under floor! Expected y = 0.10, got ${player.position.y}`);
+}
+console.log(`✓ Player resting elevation inside room: ${player.position.y.toFixed(2)}m (Shoes directly on floor surface)`);
+
+// Test jump execution
+if (!player.isGrounded) {
+  throw new Error('Player should be grounded before jump');
+}
+player.jump();
+if (player.verticalVelocity <= 0 || player.isGrounded) {
+  throw new Error('Player jump failed to initiate vertical impulse');
+}
+console.log(`✓ Jump initiated with impulse: ${player.verticalVelocity.toFixed(1)} m/s (isGrounded: ${player.isGrounded})`);
+
+// Advance physics mid-air
+player.update(0.1, camera, [], true, groundSampler);
+if (player.position.y <= 0.10 || player.isGrounded) {
+  throw new Error(`Player should be airborne mid-jump! y = ${player.position.y}`);
+}
+console.log(`✓ Player airborne mid-jump at y = ${player.position.y.toFixed(2)}m`);
+
+// Advance physics until landing
+for (let step = 0; step < 10; step++) {
+  player.update(0.1, camera, [], true, groundSampler);
+}
+if (!player.isGrounded || Math.abs(player.position.y - 0.10) > 0.001) {
+  throw new Error(`Player failed to land squarely on floor! isGrounded: ${player.isGrounded}, y = ${player.position.y}`);
+}
+console.log(`✓ Player landed cleanly on floor surface at y = ${player.position.y.toFixed(2)}m (isGrounded: ${player.isGrounded})`);
+
 console.log('--- ALL CHARACTER LOCOMOTION & VISUALS TESTS PASSED SUCCESSFULLY! ---');

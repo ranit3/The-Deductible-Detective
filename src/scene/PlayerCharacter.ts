@@ -31,15 +31,21 @@ export class PlayerCharacter {
   private leftArmPivot: THREE.Group | null = null;
   private walkCycle: number = 0;
 
-  // Position starts on porch in front of the graybox house door (z: -2.5)
-  public position: THREE.Vector3 = new THREE.Vector3(0, 0, -2.5);
+  // Position starts on porch in front of the graybox house door (y: 0.10, z: -2.5)
+  public position: THREE.Vector3 = new THREE.Vector3(0, 0.10, -2.5);
   private targetRotation: THREE.Quaternion = new THREE.Quaternion();
   private upVector: THREE.Vector3 = new THREE.Vector3(0, 1, 0);
 
   public walkSpeed: number = 3.6;
   public runSpeed: number = 6.8;
 
-  private keys = { w: false, s: false, a: false, d: false, shift: false };
+  // Jump and vertical elevation physics
+  public verticalVelocity: number = 0;
+  public isGrounded: boolean = true;
+  public jumpForce: number = 5.4;
+  public gravity: number = -18.0;
+
+  private keys = { w: false, s: false, a: false, d: false, shift: false, space: false };
   public isReady: boolean = false;
 
   constructor(scene: THREE.Scene, onLoaded?: () => void) {
@@ -268,6 +274,13 @@ export class PlayerCharacter {
     return root;
   }
 
+  public jump() {
+    if (this.isGrounded) {
+      this.verticalVelocity = this.jumpForce;
+      this.isGrounded = false;
+    }
+  }
+
   private bindInput() {
     window.addEventListener('keydown', (e) => {
       switch (e.code) {
@@ -276,6 +289,12 @@ export class PlayerCharacter {
         case 'KeyA': case 'ArrowLeft': this.keys.a = true; break;
         case 'KeyD': case 'ArrowRight': this.keys.d = true; break;
         case 'ShiftLeft': case 'ShiftRight': this.keys.shift = true; break;
+        case 'Space':
+          if (!this.keys.space && this.isGrounded) {
+            this.jump();
+          }
+          this.keys.space = true;
+          break;
       }
     });
 
@@ -286,6 +305,7 @@ export class PlayerCharacter {
         case 'KeyA': case 'ArrowLeft': this.keys.a = false; break;
         case 'KeyD': case 'ArrowRight': this.keys.d = false; break;
         case 'ShiftLeft': case 'ShiftRight': this.keys.shift = false; break;
+        case 'Space': this.keys.space = false; break;
       }
     });
   }
@@ -465,7 +485,8 @@ export class PlayerCharacter {
     delta: number,
     camera: THREE.Camera,
     colliders: BoundingBox2D[] = [],
-    canMove: boolean = true
+    canMove: boolean = true,
+    getGroundHeight?: (x: number, z: number) => number
   ): THREE.Vector3 {
     const prevPos = this.position.clone();
 
@@ -477,8 +498,6 @@ export class PlayerCharacter {
       camForward.normalize();
 
       // TRUE Screen-Right Vector: camForward × upVector
-      // Mathematical proof: with camera facing +Z into screen:
-      // (0, 0, 1) × (0, 1, 0) = (-1, 0, 0) [Screen-Right in Three.js right-handed projection]
       const camRight = new THREE.Vector3().crossVectors(camForward, this.upVector).normalize();
 
       // Controls:
@@ -534,19 +553,41 @@ export class PlayerCharacter {
         this.targetRotation.setFromAxisAngle(this.upVector, targetAngle);
         const rotFactor = Math.min(1.0, 16.0 * delta);
         this.group.quaternion.slerp(this.targetRotation, rotFactor);
+      }
 
-        // Procedural limb stride animation (if procedural detective is active)
-        if (this.proceduralRoot.visible) {
+      // 2. Vertical Jump & Ground Height Elevation Physics
+      // Samples ground height beneath feet to keep shoes directly on top of floor surfaces
+      const groundY = getGroundHeight ? getGroundHeight(this.position.x, this.position.z) : 0.10;
+
+      this.verticalVelocity += this.gravity * delta;
+      let nextY = this.position.y + this.verticalVelocity * delta;
+
+      if (nextY <= groundY) {
+        nextY = groundY;
+        this.verticalVelocity = 0;
+        this.isGrounded = true;
+      } else {
+        this.isGrounded = false;
+      }
+      this.position.y = nextY;
+
+      // 3. Procedural Limb Animation
+      if (this.proceduralRoot.visible) {
+        if (!this.isGrounded) {
+          // Airborne jump silhouette: tuck knees & raise arms
+          if (this.leftLegPivot) this.leftLegPivot.rotation.x = -0.35;
+          if (this.rightLegPivot) this.rightLegPivot.rotation.x = -0.35;
+          if (this.rightArmPivot) this.rightArmPivot.rotation.x = 0.45;
+          if (this.leftArmPivot) this.leftArmPivot.rotation.x = -0.25;
+        } else if (isMoving) {
           this.walkCycle += (this.keys.shift ? 14 : 9) * delta;
           const swing = Math.sin(this.walkCycle) * (this.keys.shift ? 0.65 : 0.45);
           if (this.leftLegPivot) this.leftLegPivot.rotation.x = swing;
           if (this.rightLegPivot) this.rightLegPivot.rotation.x = -swing;
           if (this.rightArmPivot) this.rightArmPivot.rotation.x = swing;
           if (this.leftArmPivot) this.leftArmPivot.rotation.x = -swing * 0.3;
-        }
-      } else {
-        // Return procedural limbs smoothly to rest pose
-        if (this.proceduralRoot.visible) {
+        } else {
+          // Return procedural limbs smoothly to rest pose
           const restSpeed = Math.min(1.0, 10.0 * delta);
           if (this.leftLegPivot) this.leftLegPivot.rotation.x *= (1 - restSpeed);
           if (this.rightLegPivot) this.rightLegPivot.rotation.x *= (1 - restSpeed);

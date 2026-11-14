@@ -10,10 +10,38 @@ export class Environment {
   private scene: THREE.Scene;
   public colliders: BoundingBox2D[] = [];
   public interactiveProps: THREE.Object3D[] = [];
+  public southWallMat!: THREE.MeshStandardMaterial;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
     this.buildGrayboxWorld();
+  }
+
+  /**
+   * Returns exact ground elevation at given (x, z) coordinates
+   * Ensures player feet rest directly on the floor surfaces (never submerged).
+   */
+  public getGroundHeight(x: number, z: number): number {
+    // Inside House Interior Floor: x in [-5.0, 5.0], z in [0.8, 9.0]
+    if (x >= -5.0 && x <= 5.0 && z >= 0.8 && z <= 9.0) {
+      return 0.10;
+    }
+    // Front Entrance Walkway / Porch: x in [-1.8, 1.8], z in [-3.5, 0.8]
+    if (x >= -1.8 && x <= 1.8 && z >= -3.5 && z < 0.8) {
+      return 0.10;
+    }
+    // Exterior Ground
+    return 0.0;
+  }
+
+  /**
+   * Toggles dynamic cutaway view for front (South) walls when viewing room interior.
+   */
+  public setCutaway(isCutaway: boolean) {
+    if (this.southWallMat) {
+      this.southWallMat.opacity = isCutaway ? 0.12 : 0.95;
+      this.southWallMat.depthWrite = !isCutaway;
+    }
   }
 
   private buildGrayboxWorld() {
@@ -36,9 +64,9 @@ export class Environment {
     floor.receiveShadow = true;
     this.scene.add(floor);
 
-    // Front Entrance Walkway / Porch
-    const porch = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.08, 4.0), floorMat);
-    porch.position.set(0, 0.04, -1.0);
+    // Front Entrance Walkway / Porch (aligned at y = 0.10 to match interior floor)
+    const porch = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.10, 4.2), floorMat);
+    porch.position.set(0, 0.05, -1.1);
     porch.receiveShadow = true;
     this.scene.add(porch);
 
@@ -118,8 +146,16 @@ export class Environment {
     this.colliders.push({ minX: 4.8, maxX: 5.2, minZ: 4.0, maxZ: 6.0 });
 
     // D. South Wall (Front, with Open Doorway at center x: -1.0 to 1.0)
+    // Front walls use dynamic cutaway material so they fade when viewing inside
+    this.southWallMat = new THREE.MeshStandardMaterial({
+      color: 0x64748B,
+      roughness: 0.8,
+      transparent: true,
+      opacity: 0.95
+    });
+
     // South Wall Left Segment (x: -5.0 to -1.0, length 4.0m)
-    const southWallL = new THREE.Mesh(new THREE.BoxGeometry(4.0, h, 0.4), wallMat);
+    const southWallL = new THREE.Mesh(new THREE.BoxGeometry(4.0, h, 0.4), this.southWallMat);
     southWallL.position.set(-3.0, h / 2, 1.0);
     southWallL.castShadow = true;
     southWallL.receiveShadow = true;
@@ -127,7 +163,7 @@ export class Environment {
     this.colliders.push({ minX: -5.2, maxX: -1.0, minZ: 0.8, maxZ: 1.2 });
 
     // South Wall Right Segment (x: 1.0 to 5.0, length 4.0m)
-    const southWallR = new THREE.Mesh(new THREE.BoxGeometry(4.0, h, 0.4), wallMat);
+    const southWallR = new THREE.Mesh(new THREE.BoxGeometry(4.0, h, 0.4), this.southWallMat);
     southWallR.position.set(3.0, h / 2, 1.0);
     southWallR.castShadow = true;
     southWallR.receiveShadow = true;
@@ -135,7 +171,7 @@ export class Environment {
     this.colliders.push({ minX: 1.0, maxX: 5.2, minZ: 0.8, maxZ: 1.2 });
 
     // Doorway Header (above door opening from y = 2.4 to 3.0)
-    const doorHeader = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.6, 0.4), wallMat);
+    const doorHeader = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.6, 0.4), this.southWallMat);
     doorHeader.position.set(0, 2.7, 1.0);
     doorHeader.castShadow = true;
     this.scene.add(doorHeader);
