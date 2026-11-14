@@ -1,0 +1,286 @@
+/* CITY MAP DISPATCH MENU STYLES */
+.city-map-container {
+  background: #FDFBF7;
+  border: 4px solid var(--ink);
+  border-radius: 20px;
+  box-shadow: 8px 12px 0px var(--ink);
+  width: 92%;
+  max-width: 920px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: popIn 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+}
+
+.city-map-header {
+  background: #1E293B;
+  color: #F8FAFC;
+  padding: 14px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 3px solid var(--ink);
+}
+
+.city-map-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 900;
+  font-size: 16px;
+}
+
+.city-map-badge {
+  background: #38BDF8;
+  color: #0F172A;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1.5px solid var(--ink);
+}
+
+.city-map-body {
+  display: flex;
+  flex: 1;
+  min-height: 480px;
+  overflow: hidden;
+}
+
+/* LEFT: Interactive Map Blueprint Canvas */
+.map-canvas-area {
+  flex: 1.4;
+  background: #F1F5F9;
+  position: relative;
+  border-right: 3px solid var(--ink);
+  overflow: hidden;
+  background-image: 
+    linear-gradient(to right, rgba(148, 163, 184, 0.18) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(148, 163, 184, 0.18) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* Stylized River */
+.map-river {
+  position: absolute;
+  top: 0;
+  left: 45%;
+  width: 50px;
+  height: 100%;
+  background: #BAE6FD;
+  transform: skewX(-14deg);
+  border-left: 2px dashed #7DD3FC;
+  border-right: 2px dashed #7DD3FC;
+  opacity: 0.85;
+}
+
+/* District Labels */
+.district-zone {
+  position: absolute;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #64748B;
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1.5px solid #CBD5E1;
+}
+
+.district-west { top: 68%; left: 10%; }
+.district-north { top: 12%; right: 18%; }
+.district-docks { top: 80%; right: 22%; }
+.district-center { top: 44%; left: 34%; }
+
+/* Location Pins */
+.map-pin {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.15s ease, filter 0.15s ease;
+  z-index: 10;
+  border: none;
+  background: none;
+}
+
+.map-pin:hover {
+  transform: translate(-50%, -50%) scale(1.12);
+  z-index: 20;
+}
+
+.map-pin.selected .pin-bubble {
+  border-color: #EF4444;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.25), 3px 4px 0 var(--ink);
+  transform: scale(1.08);
+}
+
+.pin-bubble {
+  background: #FFFFFF;
+  border: 2.5px solid var(--ink);
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  box-shadow: 2px 3px 0 var(--ink);
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.pin-status-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 2px solid #FFFFFF;
+}
+
+.status-uninvestigated { background: #F59E0B; }
+.status-completed { background: #10B981; }
+
+.pin-label-tag {
+  margin-top: 5px;
+  background: var(--ink);
+  color: #FFFFFF;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 8px;
+  white-space: nowrap;
+  box-shadow: 1px 2px 0 rgba(0,0,0,0.3);
+}
+
+/* RIGHT: Case Dossier Detail Panel */
+.map-dossier-panel {
+  flex: 1;
+  background: #FDFBF7;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow-y: auto;
+}
+
+.dossier-header-tag {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.dossier-case-no {
+  font-size: 12px;
+  font-weight: 900;
+  background: #FEF08A;
+  color: var(--ink);
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1.5px solid var(--ink);
+}
+
+.dossier-status-pill {
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1.5px solid var(--ink);
+}
+
+.dossier-status-pill.uninvestigated { background: #FEF08A; color: #854D0E; }
+.dossier-status-pill.completed { background: #BBF7D0; color: #166534; }
+
+.dossier-title {
+  font-size: 19px;
+  font-weight: 900;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+
+.dossier-address {
+  font-size: 12px;
+  color: #64748B;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.dossier-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.dossier-meta-card {
+  background: #FFFFFF;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  padding: 8px 10px;
+  box-shadow: 1.5px 2px 0 var(--ink);
+}
+
+.meta-label {
+  font-size: 9px;
+  font-weight: 900;
+  color: #64748B;
+  text-transform: uppercase;
+}
+
+.meta-val {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--ink);
+  margin-top: 2px;
+}
+
+.dossier-brief-box {
+  background: #FFFFFF;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #334155;
+  margin-bottom: 16px;
+  flex: 1;
+}
+
+.btn-dispatch {
+  background: #10B981;
+  color: #FFFFFF;
+  border: 2.5px solid var(--ink);
+  border-radius: 12px;
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 2.5px 3.5px 0 var(--ink);
+  transition: all 0.1s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-dispatch:hover {
+  background: #059669;
+  transform: translate(-1px, -1px);
+  box-shadow: 3.5px 4.5px 0 var(--ink);
+}
+
+.btn-dispatch:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--ink);
+}
+

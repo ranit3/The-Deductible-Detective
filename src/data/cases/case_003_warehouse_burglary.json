@@ -1,0 +1,235 @@
+{
+  "id": "case_003_warehouse_burglary",
+  "caseNumber": "CLM-2026-104",
+  "title": "The Apex Auto Heist",
+  "incidentType": "Commercial Burglary & Inventory Theft",
+  "claimantName": "Marcus Brody",
+  "claimantRole": "Logistics Director & Warehouse Operator",
+  "propertyAddress": "Pier 9, Industrial Docks",
+  "policyCoverageLimit": 100000,
+  "claimedAmount": 75000,
+  "initialDispatchBrief": "Warehouse operator Marcus Brody filed an emergency commercial theft claim. He reports an organized crew bypassed the perimeter fence overnight, sliced the heavy bay padlocks, and loaded 40 crates of high-performance imported twin-turbochargers into an unmarked getaway van. Total claim: $75,000.",
+  "claimantStatement": "I came in at 6:00 AM to open the dock doors and found the steel gate pried wide open and our heavy padlock severed! All 40 crates of Japanese performance turbos were cleaned out. A professional criminal crew hit us!",
+  "initialDialogueNodeId": "node_intro",
+  "sceneTemplate": "industrial_warehouse",
+  "mapPin": {
+    "x": 52,
+    "y": 82,
+    "district": "Industrial Docks",
+    "landmark": "Apex Logistics Pier 9",
+    "icon": "🏭",
+    "status": "uninvestigated"
+  },
+  "dialogueNodes": {
+    "node_intro": {
+      "id": "node_intro",
+      "speaker": "Marcus Brody",
+      "text": "Inspector! Thank God you're here. We got cleaned out! Professional job, in and out in fifteen minutes. My security cameras were cut, lock sliced clean in two. I need the $75,000 claim approved immediately to keep our suppliers satisfied!",
+      "options": [
+        {
+          "text": "How did the burglars gain entry through the perimeter gate?",
+          "nextNodeId": "node_entry_claim"
+        },
+        {
+          "text": "What happened to the digital CCTV security camera feed?",
+          "nextNodeId": "node_camera_claim"
+        },
+        {
+          "text": "I'll inspect the severed lock and shipping bays first.",
+          "nextNodeId": "node_inspect_prompt"
+        }
+      ]
+    },
+    "node_entry_claim": {
+      "id": "node_entry_claim",
+      "speaker": "Marcus Brody",
+      "text": "They used a high-powered angle grinder from the street outside! Cut right through our grade-8 alloy padlock from the public alleyway.",
+      "isContradictionStatement": true,
+      "options": [
+        {
+          "text": "[CONTRADICTION] Marcus, the grinder wheel burrs and melted metal slag face outward. That padlock was severed from INSIDE the closed warehouse!",
+          "nextNodeId": "node_press_lock",
+          "requiredClueId": "clue_padlock_cut_inside",
+          "isPressingQuestion": true
+        },
+        {
+          "text": "Where were the turbocharger inventory pallets positioned?",
+          "nextNodeId": "node_inventory_inquiry"
+        },
+        {
+          "text": "Let me inspect the security office.",
+          "nextNodeId": "node_inspect_prompt"
+        }
+      ]
+    },
+    "node_camera_claim": {
+      "id": "node_camera_claim",
+      "speaker": "Marcus Brody",
+      "text": "The thieves smashed our outdoor cameras with iron pipes right before breaking in!",
+      "isContradictionStatement": true,
+      "options": [
+        {
+          "text": "[CONTRADICTION] The DVR system wasn't smashed. The internal software log proves the feed was cleanly powered down with your personal master PIN #4912!",
+          "nextNodeId": "node_press_camera",
+          "requiredClueId": "clue_dvr_admin_log",
+          "isPressingQuestion": true
+        },
+        {
+          "text": "Let me check the shipping manifests in your office.",
+          "nextNodeId": "node_inspect_prompt"
+        }
+      ]
+    },
+    "node_press_lock": {
+      "id": "node_press_lock",
+      "speaker": "Marcus Brody",
+      "text": "(Blushes, rubbing his neck) Well... maybe the thieves reached their arms through the security mesh? Yeah, they probably reached inside to make the cut!",
+      "options": [
+        {
+          "text": "How do you explain the digital camera log being deactivated with your personal PIN?",
+          "nextNodeId": "node_press_camera",
+          "requiredClueId": "clue_dvr_admin_log",
+          "isPressingQuestion": true
+        },
+        {
+          "text": "Let me check the warehouse bill of lading.",
+          "nextNodeId": "node_inspect_prompt"
+        }
+      ]
+    },
+    "node_press_camera": {
+      "id": "node_press_camera",
+      "speaker": "Marcus Brody",
+      "text": "(Stammering) Someone must have... uh, shoulder-surfed my PIN! Yes, an inside job from one of the dockworkers!",
+      "options": [
+        {
+          "text": "[CONTRADICTION] But Marcus, this Port Customs rejection sheet proves those 40 turbocharger crates were turned back at customs 3 weeks ago! They were NEVER inside this building!",
+          "nextNodeId": "node_press_customs",
+          "requiredClueId": "clue_customs_rejection_notice",
+          "isPressingQuestion": true
+        },
+        {
+          "text": "What about the flight confirmation in your desk drawer?",
+          "nextNodeId": "node_inventory_inquiry"
+        }
+      ]
+    },
+    "node_press_customs": {
+      "id": "node_press_customs",
+      "speaker": "Marcus Brody",
+      "text": "(Collapses onto his desk, trembling) Okay... stop. Please. The Japanese supplier sent defective parts that customs impounded. I had already paid $75,000 on company credit. My partners were going to ruin me. I staged the break-in so the insurance would reimburse the loss before I left for the Caymans. I'm sorry...",
+      "options": [
+        {
+          "text": "Thank you for the confession, Marcus. The insurance policy strictly denies fraudulent staged losses.",
+          "nextNodeId": "node_conclusion"
+        }
+      ]
+    },
+    "node_inventory_inquiry": {
+      "id": "node_inventory_inquiry",
+      "speaker": "Marcus Brody",
+      "text": "All our inventory records are in order, Inspector. I run a tight ship here.",
+      "options": [
+        {
+          "text": "I will examine the bay and the paperwork.",
+          "nextNodeId": "node_intro"
+        }
+      ]
+    },
+    "node_inspect_prompt": {
+      "id": "node_inspect_prompt",
+      "speaker": "Marcus Brody",
+      "text": "Take a look around the bays, Inspector. You'll see the empty pallets for yourself.",
+      "options": [
+        {
+          "text": "I'll examine the lock, cameras, and shipping records.",
+          "nextNodeId": "node_intro"
+        }
+      ]
+    },
+    "node_conclusion": {
+      "id": "node_conclusion",
+      "speaker": "Marcus Brody",
+      "text": "I knew it was a gamble. Do what you have to do with your report.",
+      "options": []
+    }
+  },
+  "clues": [
+    {
+      "id": "clue_padlock_cut_inside",
+      "name": "Inside-Severed Bay Padlock",
+      "category": "tampering",
+      "description": "A heavy boron alloy padlock severed with a 4.5-inch angle grinder. The spray of melted iron sparks and grinding burrs is deposited exclusively on the exterior street side, proving the cut was executed from INSIDE the locked bay.",
+      "inspectorNote": "INSIDE TAMPERING: Impossible for an external burglar to produce outward spark arcs while standing on the alleyway pavement.",
+      "scenePosition": { "x": 0.85, "y": 1.15, "z": 1.4 },
+      "interactRadius": 2.2,
+      "requiresPhoto": true,
+      "discovered": false,
+      "photographed": false,
+      "revealsContradictionWith": "node_entry_claim"
+    },
+    {
+      "id": "clue_dvr_admin_log",
+      "name": "Security DVR Shutdown Audit Trail",
+      "category": "document",
+      "description": "Digital log from the Hikvision NVR security console in the office: 'SYSTEM SHUTDOWN: 23:15:02 - Command initiated by Master Admin PIN #4912 (Assigned: Marcus Brody). Physical camera feeds intact.'",
+      "inspectorNote": "CONTRADICTION: Cameras were not smashed by intruders; they were cleanly deactivated from the manager's terminal.",
+      "scenePosition": { "x": 2.5, "y": 0.9, "z": 8.5 },
+      "interactRadius": 2.2,
+      "requiresPhoto": false,
+      "discovered": false,
+      "photographed": false,
+      "revealsContradictionWith": "node_camera_claim"
+    },
+    {
+      "id": "clue_customs_rejection_notice",
+      "name": "Port Customs Rejection Bill of Lading",
+      "category": "document",
+      "description": "An official port document from the Maritime Authority dated 21 days ago: 'ENTRY DENIED: 40 crates Japanese twin-turbo assemblies failed EPA emissions compliance. Entire cargo remanded to sea freight return.'",
+      "inspectorNote": "PHANTOM INVENTORY: The claimed $75,000 inventory never cleared customs and was never physically stored at this warehouse facility.",
+      "scenePosition": { "x": -1.8, "y": 0.85, "z": 5.2 },
+      "interactRadius": 2.4,
+      "requiresPhoto": true,
+      "discovered": false,
+      "photographed": false,
+      "revealsContradictionWith": "node_press_camera"
+    },
+    {
+      "id": "clue_hidden_flight_tickets",
+      "name": "One-Way Flight to Grand Cayman",
+      "category": "document",
+      "description": "Airline confirmation printout hidden under the leather desk blotter: One-way flight for Marcus Brody, departing Sunday 08:00 AM, paid with cashier's check.",
+      "inspectorNote": "FLIGHT RISK & INTENT: The operator planned to cash out the insurance payout and liquidate assets immediately.",
+      "scenePosition": { "x": -3.6, "y": 0.25, "z": 7.2 },
+      "interactRadius": 2.0,
+      "requiresPhoto": false,
+      "discovered": false,
+      "photographed": false
+    },
+    {
+      "id": "clue_minor_shutter_dent",
+      "name": "Superficial Roller Track Scratches",
+      "category": "structural",
+      "description": "Cosmetic crowbar scrape marks along the lower aluminum guide rail of the bay shutter. No structural warping.",
+      "inspectorNote": "DAMAGE ASSESSMENT: Real physical repair estimate for track re-alignment is $3,200.",
+      "scenePosition": { "x": 5.0, "y": 1.1, "z": 5.0 },
+      "interactRadius": 2.0,
+      "requiresPhoto": true,
+      "discovered": false,
+      "photographed": false
+    }
+  ],
+  "groundTruth": {
+    "realCause": "vandalism_burglary",
+    "realDamageAmount": 3200,
+    "isFraud": true,
+    "fraudReason": "Marcus Brody staged an external burglary by cutting the lock from the inside and disabling cameras with his master PIN to claim $75,000 for luxury turbochargers that were rejected at customs and never delivered.",
+    "crucialClueIds": [
+      "clue_padlock_cut_inside",
+      "clue_dvr_admin_log",
+      "clue_customs_rejection_notice"
+    ],
+    "keyContradictionNodeId": "node_press_customs"
+  }
+}
+

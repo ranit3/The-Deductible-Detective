@@ -3,6 +3,7 @@ import { CaseManager } from '../logic/CaseManager';
 import { Clue } from '../logic/types';
 import { CameraViewfinder } from './CameraViewfinder';
 import { CaseBriefingView } from './CaseBriefingView';
+import { CityMapView } from './CityMapView';
 import { DialogueBoxView } from './DialogueBoxView';
 import { NotebookView } from './NotebookView';
 import { ReportFormView } from './ReportFormView';
@@ -17,6 +18,7 @@ export class UIManager {
   private sound: SoundEffects;
 
   // Sub-views
+  public cityMapView: CityMapView;
   public briefingView: CaseBriefingView;
   public notebookView: NotebookView;
   public cameraView: CameraViewfinder;
@@ -33,6 +35,7 @@ export class UIManager {
     this.caseManager = caseManager;
     this.sound = sound;
 
+    this.cityMapView = new CityMapView(caseManager);
     this.briefingView = new CaseBriefingView();
     this.notebookView = new NotebookView(caseManager);
     this.cameraView = new CameraViewfinder();
@@ -47,6 +50,12 @@ export class UIManager {
   }
 
   private bindHUDControls() {
+    // Open City Map Button
+    document.getElementById('btnOpenCityMap')?.addEventListener('click', () => {
+      this.sound.playPageFlip();
+      this.cityMapView.toggle();
+    });
+
     // Open Notebook Button
     document.getElementById('btnOpenNotebook')?.addEventListener('click', () => {
       this.sound.playPageFlip();
@@ -115,6 +124,7 @@ export class UIManager {
 
   public isAnyModalOpen(): boolean {
     return (
+      this.cityMapView.isOpen ||
       this.notebookView.isOpen ||
       this.cameraView.isOpen ||
       this.dialogueView.isOpen ||

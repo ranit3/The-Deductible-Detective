@@ -4,6 +4,7 @@ import { ScoringEngine } from './ScoringEngine';
 import { Clue, EvaluationResult, InsuranceCase, ReportSubmission } from './types';
 
 export type GamePhase = 
+  | 'city_map'
   | 'claim_briefing'
   | 'investigation'
   | 'witness_interview'
@@ -111,12 +112,28 @@ export class CaseManager {
     return this.photoThumbnails.get(clueId);
   }
 
+  public getAllCases(): InsuranceCase[] {
+    return this.cases;
+  }
+
+  public selectCaseById(caseId: string) {
+    const idx = this.cases.findIndex(c => c.id === caseId);
+    if (idx !== -1) {
+      this.initCase(idx);
+    }
+  }
+
   // --- REPORT SUBMISSION & VERDICT ---
   public submitReport(submission: ReportSubmission): EvaluationResult {
     const current = this.getCurrentCase();
     const evaluation = ScoringEngine.evaluate(submission, current.groundTruth);
     this.lastEvaluation = evaluation;
     this.phase = 'evaluation_verdict';
+
+    if (evaluation.grade !== 'F' && current.mapPin) {
+      current.mapPin.status = 'completed';
+    }
+
     this.notify();
     return evaluation;
   }

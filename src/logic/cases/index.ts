@@ -1,11 +1,4 @@
-import { InsuranceCase } from '../types';
-import { case1BakeryFire } from './case1_bakeryFire';
-import { case2RoofLeak } from './case2_roofLeak';
-
-export const ALL_CASES: InsuranceCase[] = [
-  case1BakeryFire,
-  case2RoofLeak
-];
-
-export { case1BakeryFire, case2RoofLeak };
+export { ALL_CASES, getCaseById, getAllCases } from '../../data/cases';
+export { case1BakeryFire } from './case1_bakeryFire';
+export { case2RoofLeak } from './case2_roofLeak';
 

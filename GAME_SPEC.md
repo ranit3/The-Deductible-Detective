@@ -10,7 +10,7 @@ The game follows a strict, repeatable 8-step investigative loop:
 ```
 
 1. **Claim Arrives:** Dispatch briefing summarizes property address, policy limit, claimed amount, and the insured's initial story.
-2. **Travel to Site:** Player arrives at the incident location (exterior street and interior casualty rooms).
+2. **Travel to Site (City as a Menu):** Rather than building an empty, sprawling open world, the city is treated as an interactive investigation map screen with case pins (Corner Bakery in West Quarter, Victorian Attic in North Hills, Waterfront Warehouse, etc.). Selecting a pin dispatches the adjuster directly to a focused, high-detail 3D scene diorama for that case.
 3. **Inspect Scene & Find Clues:** Move through the environment. Hover and click objects carrying clue data IDs (`data-id`) to inspect physical evidence and add them to the notebook.
 4. **Photograph Evidence:** Open camera viewfinder (`[C]`), frame physical clues in the crosshairs, and capture photo exhibits (`[SPACE]`).
 5. **Interview Claimant / Witness:** Question witnesses using branching dialogue trees. Present discovered evidence to expose verbal contradictions.
@@ -121,4 +121,30 @@ All cases must be defined as static JSON data so adding cases requires adding da
   }
 }
 ```
+
+---
+
+## 6. City-as-a-Menu Architecture & Asset Strategy
+
+### A. The "City as a Menu" Scope Saver
+* **Core Philosophy:** Do NOT build a massive, empty open world that tanks performance and balloons development time. Treat the city as an interactive municipal investigation map with district pins (a bakery, a Victorian house, a suburban villa, a downtown warehouse).
+* **Case Loading:** Clicking a pin loads one dense, self-contained, highly optimized 3D scene diorama (e.g. 10m x 8m room with porch entrance and perimeter walls).
+* **Future Street Expansion:** Walkable/drivable street segments can be added later as connecting transitions without altering any case logic.
+
+### B. Asset Sourcing Pipeline (100% Free & CC0)
+* **Kenney City & Modular Kits (CC0):**
+  * *City Kit (Roads) v2.1:* Streets, road signs, traffic lights.
+  * *Suburban & Commercial Kits:* Over 35 modular buildings, fences, trees, driveways in glTF format with matching chunky low-poly aesthetic.
+  * *Furniture Kit:* Tables, chairs, desks, cabinets, appliances.
+* **Complementary Repositories:**
+  * *KayKit (City Builder Bits / Medieval/Modern):* Low-poly props.
+  * *Quaternius & Poly Pizza:* Free CC0 props and characters.
+  * *Mixamo:* Skeletal rigs & humanoid animations (walking, talking, arguing).
+
+### C. Procedural Crime-Scene Decorators ("Faking Damage")
+* **Ransacked Rooms:** Procedural helper function that applies randomized rotations (tilt ±15°), offsets, pulled-out drawers, and scattered paper debris planes.
+* **Forced Doors / Broken Windows:** Cracked-glass material variants, displaced shard geometry, scraped lock plates.
+* **Footprints & Forensic Stains:** Three.js floor decals / decal planes (charred accelerant pools, water seepage stains, muddy shoe treads).
+* **Evidence Items:** Discrete low-poly props with emissive hover highlight and click inspection (built in Step 4).
+
 

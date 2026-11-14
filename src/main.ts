@@ -9,6 +9,7 @@ import { UIManager } from './ui/UIManager';
 import './styles/camera.css';
 import './styles/dialogue.css';
 import './styles/main.css';
+import './styles/map.css';
 import './styles/notebook.css';
 import './styles/report.css';
 
@@ -141,12 +142,22 @@ class App {
       this.ui.scoreView.show(evalResult);
     };
 
+    // City Map Dispatch Event (Treat City as a Menu)
+    this.ui.cityMapView.onDispatchCase = (selectedCase) => {
+      this.sound.playPageFlip();
+      this.caseManager.selectCaseById(selectedCase.id);
+      this.sceneManager.setupCaseScene(selectedCase.claimantName, selectedCase.clues);
+      this.sceneManager.player.setPosition(0, 0, -4);
+      this.ui.briefingView.show(selectedCase, () => {
+        this.caseManager.setPhase('investigation');
+        this.ui.showToast(`Arrived at ${selectedCase.propertyAddress}. Inspect the scene for clues.`);
+      });
+    };
+
     // Next Case & Retry Events
     this.ui.scoreView.onNextCase = () => {
-      this.caseManager.nextCase();
-      const current = this.caseManager.getCurrentCase();
-      this.sceneManager.setupCaseScene(current.claimantName, current.clues);
-      this.sceneManager.player.setPosition(0, 0, -4);
+      this.sound.playPageFlip();
+      this.ui.cityMapView.show();
     };
 
     this.ui.scoreView.onRetryCase = () => {
@@ -188,6 +199,7 @@ class App {
     window.addEventListener('keydown', (e) => {
       // If modal is open, ESC closes it
       if (e.code === 'Escape') {
+        if (this.ui.cityMapView.isOpen) this.ui.cityMapView.hide();
         if (this.ui.cameraView.isOpen) this.ui.cameraView.close();
         if (this.ui.notebookView.isOpen) this.ui.notebookView.hide();
         if (this.ui.dialogueView.isOpen) this.ui.dialogueView.close();
@@ -232,6 +244,12 @@ class App {
       // 4. File Report (R)
       else if (e.code === 'KeyR') {
         this.ui.reportView.show();
+      }
+
+      // 5. Open City Map (M)
+      else if (e.code === 'KeyM') {
+        this.sound.playPageFlip();
+        this.ui.cityMapView.toggle();
       }
     });
   }

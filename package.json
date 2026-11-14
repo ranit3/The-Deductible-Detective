@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "tsx src/logic/__tests__/logic.test.ts && tsx src/scene/__tests__/interaction.test.ts"
+    "test": "tsx src/logic/__tests__/logic.test.ts && tsx src/scene/__tests__/interaction.test.ts && tsx src/logic/__tests__/cases_data.test.ts"
   },
   "dependencies": {
     "three": "0.160.0"

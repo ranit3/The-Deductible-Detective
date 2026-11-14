@@ -50,6 +50,15 @@ export interface GroundTruth {
   keyContradictionNodeId?: string;
 }
 
+export interface MapPin {
+  x: number; // 0 - 100 percentage across map width
+  y: number; // 0 - 100 percentage across map height
+  district: string; // e.g. "West Quarter", "North Hills", "Industrial Docks"
+  landmark: string; // e.g. "Le Croissant Doré Bakery"
+  icon: string;     // e.g. "🥖", "🏠", "🏭"
+  status: 'uninvestigated' | 'in_progress' | 'completed';
+}
+
 export interface InsuranceCase {
   id: string;
   caseNumber: string;
@@ -66,6 +75,8 @@ export interface InsuranceCase {
   dialogueNodes: Record<string, DialogueNode>;
   clues: Clue[];
   groundTruth: GroundTruth;
+  mapPin?: MapPin;
+  sceneTemplate?: string;
 }
 
 export interface ReportSubmission {
