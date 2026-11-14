@@ -76,3 +76,4 @@ The game includes a fuzzy name matcher for animation clips:
 - **Talk:** Searches for clip names containing `talk`, `dialogue`, `gesture`, or `idle`.
 
 If your model does not have skeletal animations, the engine automatically falls back to smooth procedural limb-swinging and breathing animations so your character never slides statically.
+

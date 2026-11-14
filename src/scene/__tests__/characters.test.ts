@@ -114,4 +114,46 @@ if (!isNearClose) {
 }
 console.log('✓ Claimant proximity detection, head-tracking, and conversational gesturing verified.');
 
+// 5. Test Animation Cross-Fading (No T-Pose Sliding)
+const mockRoot = new THREE.Group();
+const mockMixer = new THREE.AnimationMixer(mockRoot);
+const mockTrack = new THREE.VectorKeyframeTrack('.position', [0, 1], [0, 0, 0, 0, 1, 0]);
+const idleClip = new THREE.AnimationClip('Idle', 1, [mockTrack]);
+const walkClip = new THREE.AnimationClip('Walk', 1, [mockTrack]);
+const runClip = new THREE.AnimationClip('Run', 1, [mockTrack]);
+
+(player as any).mixer = mockMixer;
+(player as any).actions = {
+  Idle: mockMixer.clipAction(idleClip),
+  Walk: mockMixer.clipAction(walkClip),
+  Run: mockMixer.clipAction(runClip)
+};
+
+// Initialize all actions
+for (const k in (player as any).actions) {
+  const act = (player as any).actions[k];
+  act.enabled = true;
+  act.setEffectiveTimeScale(1);
+  act.setEffectiveWeight(k === 'Idle' ? 1 : 0);
+  act.play();
+}
+(player as any).currentAction = 'Idle';
+
+// Transition to Walk
+player.playAction('Walk', 0.2);
+mockMixer.update(0.1);
+
+const midWalkWeight = (player as any).actions.Walk.getEffectiveWeight();
+if (midWalkWeight <= 0) {
+  throw new Error(`Walk animation weight did not increase during transition! Weight: ${midWalkWeight}`);
+}
+console.log(`✓ Walk animation crossfades cleanly (Mid-transition weight: ${midWalkWeight.toFixed(2)})`);
+
+mockMixer.update(0.15);
+const fullWalkWeight = (player as any).actions.Walk.getEffectiveWeight();
+if (fullWalkWeight < 0.99) {
+  throw new Error(`Walk animation did not reach full weight! Weight: ${fullWalkWeight}`);
+}
+console.log(`✓ Walk animation reached full weight: ${fullWalkWeight.toFixed(2)} (Prevents T-pose sliding)`);
+
 console.log('--- ALL CHARACTER LOCOMOTION & VISUALS TESTS PASSED SUCCESSFULLY! ---');

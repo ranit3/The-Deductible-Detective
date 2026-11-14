@@ -371,13 +371,16 @@ export class PlayerCharacter {
         this.mixer = new THREE.AnimationMixer(this.model!);
         const anims: THREE.AnimationClip[] = gltf.animations;
 
+        // Exclude any TPose clips from candidates
+        const nonTpose = anims.filter(c => !c.name.toLowerCase().includes('tpose') && !c.name.toLowerCase().includes('t-pose'));
+
         const findClip = (patterns: string[]): THREE.AnimationClip | undefined => {
-          return anims.find(c => patterns.some(p => c.name.toLowerCase().includes(p.toLowerCase())));
+          return nonTpose.find(c => patterns.some(p => c.name.toLowerCase().includes(p.toLowerCase())));
         };
 
         const idleClip = findClip(['idle', 'stand', 'wait']) || anims[0];
-        const walkClip = findClip(['walk', 'stride', 'move']) || anims[3] || anims[1] || anims[0];
-        const runClip = findClip(['run', 'sprint', 'jog']) || anims[1] || anims[0];
+        const walkClip = findClip(['walk', 'stride', 'move']) || anims[3] || nonTpose[0] || anims[0];
+        const runClip = findClip(['run', 'sprint', 'jog']) || anims[1] || nonTpose[0] || anims[0];
 
         this.actions = {
           Idle: this.mixer.clipAction(idleClip),
@@ -385,11 +388,15 @@ export class PlayerCharacter {
           Run: this.mixer.clipAction(runClip)
         };
 
+        // Activate all base actions with weights (Idle: 1, Walk: 0, Run: 0) like Three.js standard
         for (const key in this.actions) {
-          this.actions[key].enabled = true;
-          this.actions[key].setEffectiveWeight(key === 'Idle' ? 1 : 0);
+          const action = this.actions[key];
+          action.enabled = true;
+          action.setEffectiveTimeScale(1);
+          action.setEffectiveWeight(key === 'Idle' ? 1 : 0);
+          action.play();
         }
-        this.actions.Idle.play();
+        this.currentAction = 'Idle';
       }
 
       this.isReady = true;
@@ -436,13 +443,21 @@ export class PlayerCharacter {
     tryNext(0);
   }
 
-  public playAction(name: string) {
+  public playAction(name: string, duration: number = 0.25) {
     if (this.currentAction === name || !this.actions[name]) return;
     const prev = this.actions[this.currentAction];
     const next = this.actions[name];
 
-    prev.fadeOut(0.2);
-    next.reset().fadeIn(0.2).play();
+    next.enabled = true;
+    next.setEffectiveTimeScale(1);
+    next.setEffectiveWeight(1);
+    next.time = 0;
+
+    if (prev) {
+      prev.crossFadeTo(next, duration, true);
+    } else {
+      next.fadeIn(duration);
+    }
     this.currentAction = name;
   }
 
