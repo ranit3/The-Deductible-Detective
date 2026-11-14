@@ -4,7 +4,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3.3-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-5.1.4-646CFF?logo=vite)](https://vitejs.dev/)
 [![Rapier3D](https://img.shields.io/badge/Rapier3D-Physics-orange)](https://rapier.rs/)
-[![Tests](https://img.shields.io/badge/Tests-5%20Suites%20Passing-brightgreen)]()
+[![Tests](https://img.shields.io/badge/Tests-6%20Suites%20Passing-brightgreen)]()
 
 > *"Every casualty tells a story. Most of them are lies."*
 
@@ -115,7 +115,7 @@ npm run dev
 Open [`http://localhost:3000`](http://localhost:3000) in your browser.
 
 ### Run Automated Test Suites
-Runs all 5 automated test suites (Layer 1 Logic, Step 4 Interaction, Step 5 Case Validation, Step 6 Dialogue & Scoring, Step 8 Decorative Physics):
+Runs all 6 automated test suites (Layer 1 Logic, Step 4 Interaction, Step 5 Case Validation, Step 6 Dialogue & Scoring, Step 8 Decorative Physics, and Step 9 Character Locomotion & Visuals):
 ```bash
 npm test
 ```
@@ -125,6 +125,16 @@ Type-checks with `tsc` and bundles with Vite:
 ```bash
 npm run build
 ```
+
+---
+
+## 🎭 Custom 3D Character Pipeline (Mixamo, Quaternius, KayKit, Poly Pizza)
+The game includes a plug-and-play character system. Drop any `.glb` model into `public/models/`:
+- **Detective (Player):** Place at `public/models/detective.glb` (supports `Idle`, `Walk`, `Run` animations).
+- **Claimant (NPC / Witness):** Place at `public/models/claimant.glb` (supports `Idle`, `Talk` animations).
+
+If no external file is supplied, the game renders high-quality procedural low-poly humanoid characters (Kenney/Quaternius art style) with trench coat, fedora, clipboard, baker's apron, toque hat, head-tracking, and conversational gesturing!
+See [MODELS_GUIDE.md](MODELS_GUIDE.md) for full instructions on downloading free characters and animations from Adobe Mixamo, Quaternius, and Poly Pizza.
 
 ---
 

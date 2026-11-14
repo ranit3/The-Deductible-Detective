@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "tsx src/logic/__tests__/logic.test.ts && tsx src/scene/__tests__/interaction.test.ts && tsx src/logic/__tests__/cases_data.test.ts && tsx src/logic/__tests__/step6_dialogue_report.test.ts && tsx src/scene/__tests__/physics.test.ts"
+    "test": "tsx src/logic/__tests__/logic.test.ts && tsx src/scene/__tests__/interaction.test.ts && tsx src/logic/__tests__/cases_data.test.ts && tsx src/logic/__tests__/step6_dialogue_report.test.ts && tsx src/scene/__tests__/physics.test.ts && tsx src/scene/__tests__/characters.test.ts"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "^0.21.0",

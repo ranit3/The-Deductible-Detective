@@ -9,16 +9,27 @@ export interface BoundingBox2D {
 }
 
 /**
- * LAYER 2: STEP 3 - PLAYER CHARACTER (CAPSULE + SKELETAL MODEL)
+ * LAYER 2: STEP 3 - PLAYER CHARACTER (LOSS ADJUSTER / DETECTIVE)
  * Pure 3D representation and movement mechanics.
+ * Supports:
+ *  - Stylized low-poly Detective model (Kenney/Quaternius aesthetic with trench coat, fedora, clipboard)
+ *  - Drop-in custom GLB support (Mixamo / Quaternius / KayKit / Poly Pizza rigged models)
+ *  - Screen-relative locomotion (W: forward, S: back, A: screen-left, D: screen-right)
  */
 export class PlayerCharacter {
   public group: THREE.Group;
-  private capsuleMesh: THREE.Mesh;
+  private proceduralRoot: THREE.Group;
   private model: THREE.Group | null = null;
   private mixer: THREE.AnimationMixer | null = null;
   private actions: Record<string, THREE.AnimationAction> = {};
   private currentAction: string = 'Idle';
+
+  // Procedural limb references for non-GLB fallback animation
+  private leftLegPivot: THREE.Group | null = null;
+  private rightLegPivot: THREE.Group | null = null;
+  private rightArmPivot: THREE.Group | null = null;
+  private leftArmPivot: THREE.Group | null = null;
+  private walkCycle: number = 0;
 
   // Position starts on porch in front of the graybox house door (z: -2.5)
   public position: THREE.Vector3 = new THREE.Vector3(0, 0, -2.5);
@@ -26,8 +37,7 @@ export class PlayerCharacter {
   private upVector: THREE.Vector3 = new THREE.Vector3(0, 1, 0);
 
   public walkSpeed: number = 3.6;
-  public runSpeed: number = 7.0;
-  private rotateSpeed: number = 0.25;
+  public runSpeed: number = 6.8;
 
   private keys = { w: false, s: false, a: false, d: false, shift: false };
   public isReady: boolean = false;
@@ -37,28 +47,225 @@ export class PlayerCharacter {
     this.group.position.copy(this.position);
     scene.add(this.group);
 
-    // Initial Capsule Player Mesh (Instant visual presence, Step 2/3 requirement)
-    const capGeo = new THREE.CapsuleGeometry(0.35, 0.9, 8, 16);
-    const capMat = new THREE.MeshStandardMaterial({
-      color: 0x1E3A8A, // Navy Suit Blue
-      roughness: 0.55,
-      metalness: 0.2
-    });
-    this.capsuleMesh = new THREE.Mesh(capGeo, capMat);
-    this.capsuleMesh.position.y = 0.8;
-    this.capsuleMesh.castShadow = true;
-    this.group.add(this.capsuleMesh);
+    // 1. Build Stylized Low-Poly Detective Character (Immediate visual presence)
+    this.proceduralRoot = this.buildProceduralDetective();
+    this.group.add(this.proceduralRoot);
 
-    // Direction indicator visor on capsule
-    const visor = new THREE.Mesh(
-      new THREE.BoxGeometry(0.3, 0.12, 0.2),
-      new THREE.MeshBasicMaterial({ color: 0xFDE047 })
-    );
-    visor.position.set(0, 1.1, 0.28);
-    this.group.add(visor);
-
+    // 2. Input handling
     this.bindInput();
+
+    // 3. Asynchronously load custom/bundled GLTF model
     this.loadModel(onLoaded);
+  }
+
+  /**
+   * Builds a stylized low-poly Detective character matching Kenney/Quaternius proportions:
+   * Fedora hat, trench coat with lapels & belt, collar & red tie, trousers, leather shoes,
+   * yellow forensic clipboard in hand.
+   */
+  private buildProceduralDetective(): THREE.Group {
+    const root = new THREE.Group();
+
+    // Materials Palette (Vibrant stylized low-poly tones)
+    const matCoat = new THREE.MeshStandardMaterial({ color: 0xB45309, roughness: 0.7, metalness: 0.05 }); // Caramel Tan
+    const matCoatTrim = new THREE.MeshStandardMaterial({ color: 0x92400E, roughness: 0.65 }); // Dark Amber Lapels
+    const matHat = new THREE.MeshStandardMaterial({ color: 0x78350F, roughness: 0.7 }); // Felt Brown
+    const matHatRibbon = new THREE.MeshStandardMaterial({ color: 0x1E293B, roughness: 0.5 }); // Dark Slate Ribbon
+    const matSkin = new THREE.MeshStandardMaterial({ color: 0xFBBF24, roughness: 0.6 }); // Warm Skin Tone
+    const matShirt = new THREE.MeshStandardMaterial({ color: 0xF8FAFC, roughness: 0.7 }); // Crisp White Collar
+    const matTie = new THREE.MeshStandardMaterial({ color: 0xDC2626, roughness: 0.6 }); // Detective Crimson Tie
+    const matPants = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.8 }); // Slate Trousers
+    const matShoes = new THREE.MeshStandardMaterial({ color: 0x1E293B, roughness: 0.5 }); // Polished Oxford Shoes
+    const matGlasses = new THREE.MeshStandardMaterial({ color: 0x0F172A, roughness: 0.3, metalness: 0.4 });
+
+    // --- Torso & Trench Coat ---
+    const torsoGroup = new THREE.Group();
+    torsoGroup.position.y = 0.95;
+
+    // Main Coat Body
+    const coatBody = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.62, 0.34), matCoat);
+    coatBody.castShadow = true;
+    coatBody.receiveShadow = true;
+    torsoGroup.add(coatBody);
+
+    // Shirt Collar V-neck insert
+    const shirtInsert = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.22, 0.04), matShirt);
+    shirtInsert.position.set(0, 0.20, 0.16);
+    torsoGroup.add(shirtInsert);
+
+    // Crimson Tie
+    const tie = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.26, 0.05), matTie);
+    tie.position.set(0, 0.12, 0.17);
+    torsoGroup.add(tie);
+
+    // Trench Coat Lapels (Left and Right)
+    const leftLapel = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.38, 0.04), matCoatTrim);
+    leftLapel.position.set(-0.14, 0.12, 0.165);
+    leftLapel.rotation.z = -0.12;
+    torsoGroup.add(leftLapel);
+
+    const rightLapel = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.38, 0.04), matCoatTrim);
+    rightLapel.position.set(0.14, 0.12, 0.165);
+    rightLapel.rotation.z = 0.12;
+    torsoGroup.add(rightLapel);
+
+    // Trench Coat Waist Belt & Buckle
+    const belt = new THREE.Mesh(new THREE.BoxGeometry(0.54, 0.10, 0.36), matCoatTrim);
+    belt.position.set(0, -0.15, 0);
+    torsoGroup.add(belt);
+
+    const buckle = new THREE.Mesh(
+      new THREE.BoxGeometry(0.12, 0.12, 0.06),
+      new THREE.MeshStandardMaterial({ color: 0xF59E0B, metalness: 0.7, roughness: 0.3 })
+    );
+    buckle.position.set(0, -0.15, 0.17);
+    torsoGroup.add(buckle);
+
+    // Coat Tails / Lower Skirt
+    const coatSkirt = new THREE.Mesh(new THREE.BoxGeometry(0.54, 0.32, 0.36), matCoat);
+    coatSkirt.position.set(0, -0.32, 0);
+    coatSkirt.castShadow = true;
+    torsoGroup.add(coatSkirt);
+
+    root.add(torsoGroup);
+
+    // --- Head & Fedora ---
+    const headGroup = new THREE.Group();
+    headGroup.position.set(0, 1.48, 0);
+
+    // Head base
+    const headMesh = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.34, 0.30), matSkin);
+    headMesh.castShadow = true;
+    headGroup.add(headMesh);
+
+    // Nose
+    const nose = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.08, 0.08), matSkin);
+    nose.position.set(0, -0.02, 0.18);
+    headGroup.add(nose);
+
+    // Stylized Spectacles
+    const glassesBridge = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.05, 0.04), matGlasses);
+    glassesBridge.position.set(0, 0.04, 0.165);
+    headGroup.add(glassesBridge);
+
+    [-0.07, 0.07].forEach(gx => {
+      const lens = new THREE.Mesh(
+        new THREE.BoxGeometry(0.09, 0.09, 0.04),
+        new THREE.MeshStandardMaterial({ color: 0x93C5FD, roughness: 0.1, metalness: 0.1 })
+      );
+      lens.position.set(gx, 0.04, 0.17);
+      headGroup.add(lens);
+    });
+
+    // Fedora Hat
+    const hatGroup = new THREE.Group();
+    hatGroup.position.y = 0.18;
+
+    // Wide Fedora Brim
+    const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.38, 0.04, 16), matHat);
+    brim.castShadow = true;
+    hatGroup.add(brim);
+
+    // Hat Crown (tapered top)
+    const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 0.22, 16), matHat);
+    crown.position.y = 0.12;
+    crown.castShadow = true;
+    hatGroup.add(crown);
+
+    // Dark Ribbon Band
+    const ribbon = new THREE.Mesh(new THREE.CylinderGeometry(0.262, 0.262, 0.06, 16), matHatRibbon);
+    ribbon.position.y = 0.05;
+    hatGroup.add(ribbon);
+
+    // Fedora crease tilt
+    hatGroup.rotation.x = -0.06;
+    headGroup.add(hatGroup);
+    root.add(headGroup);
+
+    // --- Left Arm & Yellow Inspection Clipboard ---
+    this.leftArmPivot = new THREE.Group();
+    this.leftArmPivot.position.set(-0.32, 1.22, 0);
+
+    const leftArmMesh = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.44, 0.14), matCoat);
+    leftArmMesh.position.y = -0.18;
+    leftArmMesh.castShadow = true;
+    this.leftArmPivot.add(leftArmMesh);
+
+    const leftHand = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.12), matSkin);
+    leftHand.position.set(0, -0.42, 0.06);
+    this.leftArmPivot.add(leftHand);
+
+    // Forensic Clipboard
+    const clipGroup = new THREE.Group();
+    const clipBoard = new THREE.Mesh(
+      new THREE.BoxGeometry(0.24, 0.34, 0.03),
+      new THREE.MeshStandardMaterial({ color: 0xF59E0B, roughness: 0.4 })
+    );
+    clipBoard.castShadow = true;
+    clipGroup.add(clipBoard);
+
+    const clipPaper = new THREE.Mesh(
+      new THREE.BoxGeometry(0.20, 0.28, 0.04),
+      new THREE.MeshBasicMaterial({ color: 0xFFFFFF })
+    );
+    clipGroup.add(clipPaper);
+
+    const clipClamp = new THREE.Mesh(
+      new THREE.BoxGeometry(0.10, 0.04, 0.06),
+      new THREE.MeshStandardMaterial({ color: 0x94A3B8, metalness: 0.8, roughness: 0.2 })
+    );
+    clipClamp.position.set(0, 0.15, 0.02);
+    clipGroup.add(clipClamp);
+
+    clipGroup.position.set(-0.02, -0.40, 0.16);
+    clipGroup.rotation.set(-0.4, 0.3, 0);
+    this.leftArmPivot.add(clipGroup);
+    root.add(this.leftArmPivot);
+
+    // --- Right Arm (Swinging locomotion limb) ---
+    this.rightArmPivot = new THREE.Group();
+    this.rightArmPivot.position.set(0.32, 1.22, 0);
+
+    const rightArmMesh = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.44, 0.14), matCoat);
+    rightArmMesh.position.y = -0.18;
+    rightArmMesh.castShadow = true;
+    this.rightArmPivot.add(rightArmMesh);
+
+    const rightHand = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.12), matSkin);
+    rightHand.position.set(0, -0.42, 0);
+    this.rightArmPivot.add(rightHand);
+    root.add(this.rightArmPivot);
+
+    // --- Legs & Shoes (Walking pivots) ---
+    this.leftLegPivot = new THREE.Group();
+    this.leftLegPivot.position.set(-0.14, 0.58, 0);
+
+    const leftLegMesh = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.52, 0.18), matPants);
+    leftLegMesh.position.y = -0.22;
+    leftLegMesh.castShadow = true;
+    this.leftLegPivot.add(leftLegMesh);
+
+    const leftShoe = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.12, 0.28), matShoes);
+    leftShoe.position.set(0, -0.46, 0.05);
+    leftShoe.castShadow = true;
+    this.leftLegPivot.add(leftShoe);
+    root.add(this.leftLegPivot);
+
+    this.rightLegPivot = new THREE.Group();
+    this.rightLegPivot.position.set(0.14, 0.58, 0);
+
+    const rightLegMesh = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.52, 0.18), matPants);
+    rightLegMesh.position.y = -0.22;
+    rightLegMesh.castShadow = true;
+    this.rightLegPivot.add(rightLegMesh);
+
+    const rightShoe = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.12, 0.28), matShoes);
+    rightShoe.position.set(0, -0.46, 0.05);
+    rightShoe.castShadow = true;
+    this.rightLegPivot.add(rightShoe);
+    root.add(this.rightLegPivot);
+
+    return root;
   }
 
   private bindInput() {
@@ -84,30 +291,42 @@ export class PlayerCharacter {
   }
 
   private loadModel(onLoaded?: () => void) {
+    // If running in headless/node test environment without a browser origin, retain procedural detective
+    if (typeof window === 'undefined' || !window.location || !window.location.origin) {
+      this.isReady = true;
+      if (onLoaded) onLoaded();
+      return;
+    }
+
     const loader = new GLTFLoader();
 
     const onModelReady = (gltf: any) => {
       this.model = gltf.scene;
       this.group.add(this.model!);
-      this.model!.rotation.y = 0; // Model faces +Z
 
-      // Hide simple capsule when high-poly skeletal adjuster is attached
-      this.capsuleMesh.visible = false;
+      // glTF standards specify models face -Z; rotate by 180° so model faces +Z
+      this.model!.rotation.y = Math.PI;
 
-      // Navy suit material styling for Loss Adjuster
+      // Hide procedural fallback character when GLTF is attached
+      this.proceduralRoot.visible = false;
+
+      // Preserve native textures & colors; do NOT override with solid dark silhouette
       this.model!.traverse((obj: any) => {
         if (obj.isMesh) {
           obj.castShadow = true;
           obj.receiveShadow = true;
           if (obj.material) {
-            obj.material.metalness = 0.15;
-            obj.material.roughness = 0.65;
-            obj.material.color.setHex(0x2B3D52);
+            obj.material.metalness = Math.min(obj.material.metalness ?? 0.1, 0.25);
+            obj.material.roughness = Math.max(obj.material.roughness ?? 0.6, 0.5);
+            // If the model has textures, ensure base tint is pure white so textures render vividly
+            if (obj.material.map) {
+              obj.material.color.setHex(0xFFFFFF);
+            }
           }
         }
       });
 
-      // Find bones for accessories
+      // Find bones for accessories (supports standard Mixamo and custom rigs)
       let leftHandBone: any = null;
       let headBone: any = null;
       this.model!.traverse((child: any) => {
@@ -118,11 +337,11 @@ export class PlayerCharacter {
         }
       });
 
-      // 1. Yellow Inspection Clipboard on Left Hand
+      // Attach Yellow Inspection Clipboard to Left Hand
       const clipGroup = new THREE.Group();
       const board = new THREE.Mesh(
         new THREE.BoxGeometry(0.24, 0.35, 0.03),
-        new THREE.MeshStandardMaterial({ color: 0xF4A261, roughness: 0.5 })
+        new THREE.MeshStandardMaterial({ color: 0xF59E0B, roughness: 0.4 })
       );
       clipGroup.add(board);
       const paper = new THREE.Mesh(
@@ -139,7 +358,7 @@ export class PlayerCharacter {
         this.group.add(clipGroup);
       }
 
-      // 2. Spectacles on Head
+      // Attach Spectacles to Head
       const glasses = new THREE.Mesh(
         new THREE.BoxGeometry(0.22, 0.06, 0.18),
         new THREE.MeshBasicMaterial({ color: 0x1E293B })
@@ -147,41 +366,74 @@ export class PlayerCharacter {
       glasses.position.set(0, 0.15, 0.18);
       if (headBone) headBone.add(glasses);
 
-      // Setup Animation Mixer
-      this.mixer = new THREE.AnimationMixer(this.model!);
-      const anims = gltf.animations;
-      this.actions = {
-        Idle: this.mixer.clipAction(anims[0]),
-        Run: this.mixer.clipAction(anims[1]),
-        Walk: this.mixer.clipAction(anims[3])
-      };
+      // Setup Animation Mixer (flexible name matching for Mixamo / Quaternius / KayKit)
+      if (gltf.animations && gltf.animations.length > 0) {
+        this.mixer = new THREE.AnimationMixer(this.model!);
+        const anims: THREE.AnimationClip[] = gltf.animations;
 
-      for (const key in this.actions) {
-        this.actions[key].enabled = true;
-        this.actions[key].setEffectiveWeight(key === 'Idle' ? 1 : 0);
+        const findClip = (patterns: string[]): THREE.AnimationClip | undefined => {
+          return anims.find(c => patterns.some(p => c.name.toLowerCase().includes(p.toLowerCase())));
+        };
+
+        const idleClip = findClip(['idle', 'stand', 'wait']) || anims[0];
+        const walkClip = findClip(['walk', 'stride', 'move']) || anims[3] || anims[1] || anims[0];
+        const runClip = findClip(['run', 'sprint', 'jog']) || anims[1] || anims[0];
+
+        this.actions = {
+          Idle: this.mixer.clipAction(idleClip),
+          Walk: this.mixer.clipAction(walkClip),
+          Run: this.mixer.clipAction(runClip)
+        };
+
+        for (const key in this.actions) {
+          this.actions[key].enabled = true;
+          this.actions[key].setEffectiveWeight(key === 'Idle' ? 1 : 0);
+        }
+        this.actions.Idle.play();
       }
-      this.actions.Idle.play();
 
       this.isReady = true;
       if (onLoaded) onLoaded();
     };
 
-    // Check preloaded Base64
-    if ((window as any).SOLDIER_GLB_B64) {
-      try {
-        const bin = atob((window as any).SOLDIER_GLB_B64);
-        const bytes = new Uint8Array(bin.length);
-        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-        loader.parse(bytes.buffer, '', onModelReady, () => {
-          loader.load('models/Soldier.glb', onModelReady);
-        });
-        return;
-      } catch (e) {}
-    }
+    // Candidate model paths: user drop-in 'detective.glb', bundled 'Soldier.glb', or preloaded Base64
+    const tryLoadPaths = [
+      'models/detective.glb',
+      '/models/detective.glb',
+      'models/Soldier.glb',
+      '/models/Soldier.glb'
+    ];
 
-    loader.load('models/Soldier.glb', onModelReady, undefined, () => {
-      loader.load('https://threejs.org/examples/models/gltf/Soldier.glb', onModelReady);
-    });
+    const tryNext = (index: number) => {
+      if (index >= tryLoadPaths.length) {
+        // Fallback to preloaded Base64 if available
+        if ((window as any).SOLDIER_GLB_B64) {
+          try {
+            const bin = atob((window as any).SOLDIER_GLB_B64);
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            loader.parse(bytes.buffer, '', onModelReady, () => {
+              this.isReady = true;
+              if (onLoaded) onLoaded();
+            });
+            return;
+          } catch (e) {}
+        }
+        // Retain procedural detective fallback
+        this.isReady = true;
+        if (onLoaded) onLoaded();
+        return;
+      }
+
+      loader.load(
+        tryLoadPaths[index],
+        onModelReady,
+        undefined,
+        () => tryNext(index + 1)
+      );
+    };
+
+    tryNext(0);
   }
 
   public playAction(name: string) {
@@ -203,14 +455,22 @@ export class PlayerCharacter {
     const prevPos = this.position.clone();
 
     if (canMove) {
-      // Screen-relative movement vector from camera
+      // 1. Calculate Screen-Relative Locomotion Vectors from Camera
       const camForward = new THREE.Vector3();
       camera.getWorldDirection(camForward);
       camForward.y = 0;
       camForward.normalize();
 
-      const camRight = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), camForward).normalize();
+      // TRUE Screen-Right Vector: camForward × upVector
+      // Mathematical proof: with camera facing +Z into screen:
+      // (0, 0, 1) × (0, 1, 0) = (-1, 0, 0) [Screen-Right in Three.js right-handed projection]
+      const camRight = new THREE.Vector3().crossVectors(camForward, this.upVector).normalize();
 
+      // Controls:
+      // W: forward into scene (along camForward)
+      // S: back toward camera (along -camForward)
+      // D: right on screen (along +camRight)
+      // A: left on screen (along -camRight)
       const inputZ = (this.keys.w ? 1 : 0) - (this.keys.s ? 1 : 0);
       const inputX = (this.keys.d ? 1 : 0) - (this.keys.a ? 1 : 0);
 
@@ -257,7 +517,27 @@ export class PlayerCharacter {
         // Smooth rotation to face movement heading
         const targetAngle = Math.atan2(moveDir.x, moveDir.z);
         this.targetRotation.setFromAxisAngle(this.upVector, targetAngle);
-        this.group.quaternion.rotateTowards(this.targetRotation, this.rotateSpeed);
+        const rotFactor = Math.min(1.0, 16.0 * delta);
+        this.group.quaternion.slerp(this.targetRotation, rotFactor);
+
+        // Procedural limb stride animation (if procedural detective is active)
+        if (this.proceduralRoot.visible) {
+          this.walkCycle += (this.keys.shift ? 14 : 9) * delta;
+          const swing = Math.sin(this.walkCycle) * (this.keys.shift ? 0.65 : 0.45);
+          if (this.leftLegPivot) this.leftLegPivot.rotation.x = swing;
+          if (this.rightLegPivot) this.rightLegPivot.rotation.x = -swing;
+          if (this.rightArmPivot) this.rightArmPivot.rotation.x = swing;
+          if (this.leftArmPivot) this.leftArmPivot.rotation.x = -swing * 0.3;
+        }
+      } else {
+        // Return procedural limbs smoothly to rest pose
+        if (this.proceduralRoot.visible) {
+          const restSpeed = Math.min(1.0, 10.0 * delta);
+          if (this.leftLegPivot) this.leftLegPivot.rotation.x *= (1 - restSpeed);
+          if (this.rightLegPivot) this.rightLegPivot.rotation.x *= (1 - restSpeed);
+          if (this.rightArmPivot) this.rightArmPivot.rotation.x *= (1 - restSpeed);
+          if (this.leftArmPivot) this.leftArmPivot.rotation.x *= (1 - restSpeed);
+        }
       }
     } else {
       this.playAction('Idle');
