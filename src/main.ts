@@ -101,7 +101,7 @@ class App {
 
       const clue = this.caseManager.discoverClue(clueId);
       if (clue) {
-        this.sound.playPageFlip();
+        this.sound.playClueDiscovered();
         this.ui.showToast(`🔍 Discovered: ${clue.name}! Logged in notebook.`);
         this.ui.updateHUD();
         if (this.ui.notebookView.isOpen) {
@@ -229,7 +229,7 @@ class App {
         } else if (this.currentNearClue) {
           const clue = this.caseManager.discoverClue(this.currentNearClue.id);
           if (clue) {
-            this.sound.playPageFlip();
+            this.sound.playClueDiscovered();
             this.ui.showToast(`🔍 Inspected: ${clue.name}. Logged in notebook.`);
             this.ui.updateHUD();
           }

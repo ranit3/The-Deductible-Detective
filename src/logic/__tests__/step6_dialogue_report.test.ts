@@ -107,3 +107,4 @@ if (resFail.grade !== 'F' || resFail.totalScore !== 0) {
 }
 
 console.log('\n--- ALL STEP 6 DIALOGUE & SCORING TESTS PASSED SUCCESSFULLY! ---');
+

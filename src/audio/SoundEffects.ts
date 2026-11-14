@@ -126,5 +126,26 @@ export class SoundEffects {
     osc.start(t);
     osc.stop(t + 0.16);
   }
+
+  // Clue discovery forensic chime (D-major sparkle)
+  public playClueDiscovered() {
+    if (this.muted) return;
+    this.init();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    const freqs = [587.33, 880, 1174.66]; // D5, A5, D6
+    freqs.forEach((f, i) => {
+      const osc = this.ctx!.createOscillator();
+      const gain = this.ctx!.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(f, t + i * 0.06);
+      gain.gain.setValueAtTime(0.12, t + i * 0.06);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.06 + 0.4);
+      osc.connect(gain);
+      gain.connect(this.ctx!.destination);
+      osc.start(t + i * 0.06);
+      osc.stop(t + i * 0.06 + 0.4);
+    });
+  }
 }
 

@@ -90,10 +90,12 @@ export class SceneManager {
   }
 
   private setupLights() {
-    const hemiLight = new THREE.HemisphereLight(0xFFFFFF, 0x94A3B8, 0.75);
+    // 1. Hemisphere Light (Soft Sky & Ground Bounce)
+    const hemiLight = new THREE.HemisphereLight(0xF0F9FF, 0x94A3B8, 0.85);
     this.scene.add(hemiLight);
 
-    const dirLight = new THREE.DirectionalLight(0xFFFBEB, 1.35);
+    // 2. Warm Key Sunlight with Soft PCF Shadows
+    const dirLight = new THREE.DirectionalLight(0xFFFBEB, 1.4);
     dirLight.position.set(16, 35, -14);
     dirLight.castShadow = true;
     dirLight.shadow.mapSize.set(2048, 2048);
@@ -103,10 +105,17 @@ export class SceneManager {
     dirLight.shadow.camera.right = 20;
     dirLight.shadow.camera.top = 20;
     dirLight.shadow.camera.bottom = -20;
+    dirLight.shadow.radius = 2.0;
+    dirLight.shadow.bias = -0.0004;
     this.scene.add(dirLight);
 
-    // Interior Soft Fill Light for room inspection
-    const interiorLight = new THREE.PointLight(0xFFFBEB, 0.8, 14);
+    // 3. Sky Bounce Fill Light
+    const bounceLight = new THREE.DirectionalLight(0xBAE6FD, 0.45);
+    bounceLight.position.set(-14, 18, 16);
+    this.scene.add(bounceLight);
+
+    // 4. Warm Interior Inspection Lamp for Room Examination
+    const interiorLight = new THREE.PointLight(0xFFFBEB, 0.95, 14, 1.8);
     interiorLight.position.set(0, 2.8, 5.0);
     this.scene.add(interiorLight);
   }

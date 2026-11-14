@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import { BoundingBox2D } from './PlayerCharacter';
+import { CrimeSceneDecorators } from './CrimeSceneDecorators';
 
 /**
- * LAYER 2: STEP 3 - GRAYBOX ONE HOUSE
- * Plain boxes for walls, a door, a smashed window, and a table.
- * No decorative art yet; clean, functional, readable spatial geometry and collision.
+ * LAYER 2: STEP 3 & STEP 7 - CHUNKY LOW-POLY INCIDENT DIORAMA
+ * Walls, baseboards, door, smashed window, furniture, and procedural crime-scene decorators.
  */
 export class Environment {
   private scene: THREE.Scene;
@@ -290,6 +290,31 @@ export class Environment {
     };
     this.scene.add(ledgerGroup);
     this.interactiveProps.push(ledgerGroup);
+
+    // 7. Chunky Architectural Baseboards (Kenney Style Trim)
+    const baseboardMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.7 });
+    // North baseboard
+    const baseNorth = new THREE.Mesh(new THREE.BoxGeometry(9.8, 0.16, 0.06), baseboardMat);
+    baseNorth.position.set(0, 0.13, 8.78);
+    this.scene.add(baseNorth);
+    // West baseboard
+    const baseWest = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.16, 7.8), baseboardMat);
+    baseWest.position.set(-4.78, 0.13, 5.0);
+    this.scene.add(baseWest);
+
+    // 8. Procedural Crime-Scene Decorators ("Faking Damage")
+    // Scattered ransacked papers near cabinet
+    CrimeSceneDecorators.createRansackedPapers(this.scene, new THREE.Vector3(2.2, 0.05, 7.6), 5);
+
+    // Chunky Burlap Flour Sacks stacked near kitchen prep table
+    CrimeSceneDecorators.createFlourSack(this.scene, new THREE.Vector3(-3.2, 0.22, 5.2), 0.3);
+    CrimeSceneDecorators.createFlourSack(this.scene, new THREE.Vector3(-3.2, 0.55, 5.2), -0.2);
+
+    // Wooden Shipping Pallet on Porch
+    CrimeSceneDecorators.createPallet(this.scene, new THREE.Vector3(-1.0, 0.04, -1.6));
+
+    // Multi-Layered Iridescent Hydrocarbon Decal beneath burn mark
+    CrimeSceneDecorators.createDecal(this.scene, 'burn_accelerant', new THREE.Vector3(0.0, 0.05, 4.8));
   }
 
   public getInteractiveObjects(): THREE.Object3D[] {
