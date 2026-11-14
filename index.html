@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+  <title>The Loss Adjuster - Forensic Claims Investigation</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Preloaded local Base64 GLB for instant loading without CORS -->
+  <script src="/models/soldier_b64.js"></script>
+</head>
+<body>
+
+  <!-- Loading Screen -->
+  <div id="loading-overlay">
+    <div class="loading-card">
+      <div class="loading-spinner"></div>
+      <h2 style="font-weight:900; color:var(--ink); margin-bottom:6px;">INITIALIZING CLAIMS BUREAU</h2>
+      <p style="font-size:13px; font-weight:800; color:#64748B;">Dispatching Loss Adjuster to casualty location...</p>
+    </div>
+  </div>
+
+  <!-- Main 3D WebGL Canvas Container -->
+  <div id="container"></div>
+
+  <!-- Contextual Interaction Prompt -->
+  <div id="interact-prompt">[E] Inspect Physical Evidence</div>
+
+  <!-- Top Investigation HUD Overlay -->
+  <div class="ui-top">
+    <div class="brand-badge">
+      <span style="font-size:26px;">📋</span>
+      <div>
+        <div class="brand-title">THE LOSS ADJUSTER</div>
+        <div class="brand-subtitle">Casualty & Fraud Bureau • 損害査定員</div>
+      </div>
+    </div>
+
+    <!-- Live Case Information -->
+    <div class="hud-case-card">
+      <span class="hud-case-tag" id="hudCaseNum">CLM-2026-084</span>
+      <span class="hud-case-name" id="hudCaseTitle">The Golden Crust Inferno</span>
+    </div>
+
+    <!-- Live Evidence Counters -->
+    <div class="hud-stats-group">
+      <div class="hud-pill">
+        <span class="hud-label">CLUES</span>
+        <span class="hud-val" id="hudCluesVal">0 / 5</span>
+      </div>
+      <div class="hud-pill">
+        <span class="hud-label">PHOTOS</span>
+        <span class="hud-val" id="hudPhotosVal">0</span>
+      </div>
+    </div>
+
+    <!-- Top Action Controls -->
+    <div class="top-controls">
+      <button class="btn btn-notebook" id="btnOpenNotebook" title="Open Investigation Notebook (N)">
+        <span>📓</span> NOTEBOOK
+      </button>
+      <button class="btn btn-camera" id="btnOpenCamera" title="Open Evidence Camera (C)">
+        <span>📷</span> CAMERA
+      </button>
+      <button class="btn btn-file-report" id="btnFileReport" title="Draft & File Report (R)">
+        <span>⚖️</span> FILE REPORT
+      </button>
+      <button class="btn" id="btnSound" title="Toggle Sound">
+        <span id="soundIcon">🔊</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Floating Toast Notifications -->
+  <div class="toast-tip" id="toastTip">WASD: Walk • E: Inspect Clue / Talk • C: Camera • N: Notebook • R: File Report</div>
+
+  <!-- Bottom Legend Bar -->
+  <div class="ui-bottom">
+    <div class="legend-bar">
+      <div class="legend-item"><span class="kbd">W A S D</span> 移動 (Move)</div>
+      <div class="legend-item"><span class="kbd">Shift</span> 走る (Run)</div>
+      <div class="legend-item"><span class="kbd">E</span> 調査 / 対話 (Inspect / Interview)</div>
+      <div class="legend-item"><span class="kbd">C</span> カメラ (Photo Evidence)</div>
+      <div class="legend-item"><span class="kbd">N</span> 手帳 (Notebook)</div>
+      <div class="legend-item"><span class="kbd">R</span> 報告書 (File Assessment Report)</div>
+      <div class="legend-item"><span class="kbd">Right-Drag</span> 360° 視点 (Orbit Look)</div>
+    </div>
+  </div>
+
+  <!-- Vite TypeScript Entry Point -->
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

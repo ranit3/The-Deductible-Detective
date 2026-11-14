@@ -1,0 +1,198 @@
+/* REPORT FORM STYLES */
+.report-card {
+  background: var(--paper);
+  border: 4px solid var(--ink);
+  border-radius: 20px;
+  box-shadow: 8px 10px 0px var(--ink);
+  width: 90%;
+  max-width: 680px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.report-header {
+  background: #0F172A; /* Deep municipal blue */
+  color: #FFFFFF;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 3px solid var(--ink);
+}
+
+.report-badge {
+  font-size: 10px;
+  font-weight: 900;
+  color: #94A3B8;
+  letter-spacing: 0.5px;
+}
+
+.report-title {
+  font-size: 18px;
+  font-weight: 900;
+  color: #FFFFFF;
+}
+
+.report-header .btn-close {
+  color: #FFFFFF;
+}
+
+.report-form-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--paper);
+}
+
+.report-meta-strip {
+  background: var(--paper-cream);
+  border: 2px solid #CBD5E1;
+  border-radius: 8px;
+  padding: 8px 14px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 800;
+  color: #334155;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-label {
+  font-size: 11px;
+  font-weight: 900;
+  color: #475569;
+  letter-spacing: 0.3px;
+}
+
+.label-sub {
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748B;
+}
+
+.form-select, .form-input, .form-textarea {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+  background: #FFFFFF;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  padding: 10px 12px;
+  box-shadow: 2px 2px 0px var(--ink);
+}
+
+.form-select:focus, .form-input:focus, .form-textarea:focus {
+  outline: none;
+  border-color: #2563EB;
+}
+
+.fraud-toggle-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.radio-card {
+  background: var(--paper-cream);
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  box-shadow: 2px 2px 0px var(--ink);
+  transition: transform 0.08s ease;
+}
+
+.radio-card:hover { transform: translateY(-1px); }
+
+.radio-card input {
+  margin-top: 3px;
+}
+
+.radio-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.radio-label strong {
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.radio-label small {
+  font-size: 10px;
+  color: #64748B;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.radio-card.fraud-danger {
+  border-color: #DC2626;
+  background: #FFF1F2;
+}
+
+.radio-card.fraud-danger strong {
+  color: #DC2626;
+}
+
+.currency-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.currency-symbol {
+  position: absolute;
+  left: 12px;
+  font-size: 16px;
+  font-weight: 900;
+  color: #64748B;
+}
+
+.currency-input-wrapper .form-input {
+  width: 100%;
+  padding-left: 28px;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.exhibits-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--paper-cream);
+  border: 2px solid #CBD5E1;
+  border-radius: 8px;
+  padding: 10px 14px;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.exhibit-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.btn-submit-report {
+  width: 100%;
+  justify-content: center;
+}
+

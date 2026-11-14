@@ -1,0 +1,143 @@
+/* CAMERA VIEWFINDER OVERLAY */
+.camera-overlay {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 40;
+  display: none;
+}
+
+.camera-overlay.active {
+  display: block;
+}
+
+.viewfinder-frame {
+  position: absolute;
+  top: 40px; bottom: 40px;
+  left: 60px; right: 60px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  pointer-events: auto;
+}
+
+.corner {
+  position: absolute;
+  width: 28px; height: 28px;
+  border-color: #FFFFFF;
+  border-style: solid;
+}
+
+.corner.top-left { top: 0; left: 0; border-width: 3px 0 0 3px; }
+.corner.top-right { top: 0; right: 0; border-width: 3px 3px 0 0; }
+.corner.bottom-left { bottom: 0; left: 0; border-width: 0 0 3px 3px; }
+.corner.bottom-right { bottom: 0; right: 0; border-width: 0 3px 3px 0; }
+
+.viewfinder-grid {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none;
+}
+
+.grid-line.horizontal {
+  position: absolute; top: 50%; left: 0; width: 100%; height: 1px;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.grid-line.vertical {
+  position: absolute; top: 0; left: 50%; width: 1px; height: 100%;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.center-focus-ring {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60px; height: 60px;
+  border: 2px solid #FEF08A;
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(254, 240, 138, 0.6);
+}
+
+.camera-telemetry {
+  position: absolute;
+  top: 14px; left: 20px; right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #FFFFFF;
+  font-family: monospace;
+  font-size: 13px;
+  font-weight: 900;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.rec-dot {
+  width: 10px; height: 10px;
+  background: #EF4444;
+  border-radius: 50%;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+.telemetry-clue {
+  margin-left: auto;
+  color: #FEF08A;
+}
+
+.camera-controls {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-shutter {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  border: 4px solid #FFFFFF;
+  background: rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.08s ease;
+  pointer-events: auto;
+}
+
+.btn-shutter:hover { transform: scale(1.08); }
+.btn-shutter:active { transform: scale(0.95); }
+
+.shutter-inner {
+  width: 46px; height: 46px;
+  background: #FFFFFF;
+  border-radius: 50%;
+}
+
+.shutter-hint {
+  color: #FFFFFF;
+  font-size: 12px;
+  font-weight: 800;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.shutter-flash {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: #FFFFFF;
+  pointer-events: none;
+  z-index: 60;
+  opacity: 0;
+  transition: opacity 0.18s ease-out;
+}
+
+.shutter-flash.flash {
+  opacity: 0.95;
+}
+
