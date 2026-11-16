@@ -550,9 +550,9 @@ export class PlayerCharacter {
           }
         }
 
-        // Clamp to map bounds
-        this.position.x = Math.max(-16, Math.min(16, nextX));
-        this.position.z = Math.max(-12, Math.min(16, nextZ));
+        // Clamp to town map bounds
+        this.position.x = Math.max(-32, Math.min(32, nextX));
+        this.position.z = Math.max(-25, Math.min(25, nextZ));
 
         // Smooth rotation to face movement heading
         const targetAngle = Math.atan2(moveDir.x, moveDir.z);

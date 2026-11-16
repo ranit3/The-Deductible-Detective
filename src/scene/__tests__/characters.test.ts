@@ -305,4 +305,34 @@ if (!hasWallCollidersWithMaxY || !hasRooftopCollidersWithMinY) {
 }
 console.log('✓ Multi-level vertical collider filtering verified (Ground walls use maxY: 2.8, Parapets use minY: 2.8).');
 
+// 9. Test ModelLoader & Kenney Town Environment
+console.log('Testing ModelLoader & Kenney Town Environment...');
+import { ModelLoader } from '../ModelLoader';
+const loader = ModelLoader.getInstance();
+
+const testKeys = ['road_straight', 'road_crossroad', 'suburban_house_green', 'commercial_shop_cafe', 'tree_oak', 'car_sedan'];
+testKeys.forEach(k => {
+  const model = loader.instantiate(k);
+  if (!model || !(model as any).isGroup) {
+    throw new Error(`ModelLoader failed to instantiate '${k}'`);
+  }
+});
+console.log(`✓ ModelLoader successfully instantiates cached & procedural models (${testKeys.join(', ')}).`);
+
+// Test town environment colliders and elevation
+if (!env.town || env.town.colliders.length === 0) {
+  throw new Error('Expected TownEnvironment colliders to be registered in Environment');
+}
+console.log(`✓ TownEnvironment registered ${env.town.colliders.length} town colliders (buildings, fences, streetlights, trees).`);
+
+const sidewalkH = env.getGroundHeight(0, -2.7);
+const roadH = env.getGroundHeight(0, -6.5);
+if (sidewalkH !== 0.10) {
+  throw new Error(`Expected sidewalk height 0.10m, got ${sidewalkH}`);
+}
+if (roadH !== 0.03) {
+  throw new Error(`Expected road height 0.03m, got ${roadH}`);
+}
+console.log(`✓ Town ground elevations verified: Sidewalk = ${sidewalkH.toFixed(2)}m, Main Street Road = ${roadH.toFixed(2)}m.`);
+
 console.log('--- ALL CHARACTER LOCOMOTION & VISUALS TESTS PASSED SUCCESSFULLY! ---');

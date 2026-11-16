@@ -1,20 +1,26 @@
 import * as THREE from 'three';
 import { BoundingBox2D } from './PlayerCharacter';
 import { CrimeSceneDecorators } from './CrimeSceneDecorators';
+import { TownEnvironment } from './TownEnvironment';
+import { ModelLoader } from './ModelLoader';
 
 /**
  * LAYER 2: STEP 3 & STEP 7 - CHUNKY LOW-POLY INCIDENT DIORAMA
  * Walls, baseboards, door, smashed window, furniture, and procedural crime-scene decorators.
+ * Integrated with Kenney-style TownEnvironment (roads, surrounding buildings, fences, driveways, trees).
  */
 export class Environment {
   private scene: THREE.Scene;
   public colliders: BoundingBox2D[] = [];
   public interactiveProps: THREE.Object3D[] = [];
   public southWallMat!: THREE.MeshStandardMaterial;
+  public town: TownEnvironment;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
     this.buildGrayboxWorld();
+    this.town = new TownEnvironment(this.scene, ModelLoader.getInstance());
+    this.colliders.push(...this.town.colliders);
   }
 
   /**
@@ -23,7 +29,9 @@ export class Environment {
    *  - Staircase & Landing: climbs continuously from 0.10m to 3.10m
    *  - Rooftop Deck: 3.10m when elevated (y >= 2.0m)
    *  - Room Interior & Front Porch: 0.10m (shoes directly on floor surface)
-   *  - Exterior Yard: 0.0m
+   *  - Sidewalks & Paved Walkways: 0.10m
+   *  - Asphalt Roads: 0.03m
+   *  - Exterior Yard & Lawn: 0.0m
    */
   public getGroundHeight(x: number, z: number, currentY?: number): number {
     // 1. Staircase & Top Landing along West Wall:
@@ -55,7 +63,30 @@ export class Environment {
       return 0.10;
     }
 
-    // 4. Exterior Yard Ground
+    // 4. Sidewalks & Paved Walkways:
+    // North sidewalk in front of bakery & shops
+    if (x >= -22.0 && x <= 10.0 && z >= -3.6 && z <= -1.8) {
+      return 0.10;
+    }
+    // South sidewalk across street
+    if (x >= -22.0 && x <= 10.0 && z >= -11.2 && z <= -9.4) {
+      return 0.10;
+    }
+    // Avenue / Crossroad sidewalks
+    if ((x >= 9.8 && x <= 18.2 && z >= -25.0 && z <= 18.0) &&
+        (Math.abs(x - 14.0) > 2.8 || z > 10.0 || z < -10.0)) {
+      return 0.10;
+    }
+
+    // 5. Asphalt Roads (Main Street & Crossroad Avenue)
+    if (z >= -9.6 && z <= -3.4 && x >= -22.0 && x <= 18.0) {
+      return 0.03;
+    }
+    if (x >= 10.8 && x <= 17.2 && z >= -25.0 && z <= 18.0) {
+      return 0.03;
+    }
+
+    // 6. Exterior Yard Ground
     return 0.0;
   }
 
@@ -77,11 +108,11 @@ export class Environment {
     const trimMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.6 });   // Door/window frames & table
     const glassMat = new THREE.MeshStandardMaterial({ color: 0x38BDF8, roughness: 0.2, transparent: true, opacity: 0.6 });
 
-    // 1. Exterior Ground Plane
-    const ground = new THREE.Mesh(new THREE.BoxGeometry(36, 0.4, 36), groundMat);
-    ground.position.y = -0.2;
-    ground.receiveShadow = true;
-    this.scene.add(ground);
+    // 1. House Concrete Foundation Slab
+    const foundation = new THREE.Mesh(new THREE.BoxGeometry(10.6, 0.2, 8.6), groundMat);
+    foundation.position.set(0, -0.05, 5.0);
+    foundation.receiveShadow = true;
+    this.scene.add(foundation);
 
     // 2. House Interior Floor (10m wide x 8m deep, centered around z = 5.0)
     const floor = new THREE.Mesh(new THREE.BoxGeometry(10.0, 0.1, 8.0), floorMat);
